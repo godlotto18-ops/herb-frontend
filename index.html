@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>약초 조합 도감 - 멀티플레이 버전 🌐</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+        body { font-family: 'Noto Sans KR', 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+        
+        /* 로딩 스피너 애니메이션 */
+        .loader {
+            border: 3px solid #1e293b;
+            border-bottom-color: #10b981;
+            border-radius: 50%;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+        }
+        @keyframes rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r bg-emerald-400 to-teal-400 flex items-center gap-2">
+                    🌿 약초 조합 도감 <span class="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/30">서버 연동됨</span>
+                </h1>
+                <p class="text-xs text-slate-400 mt-1" id="server-status">서버에 연결 중...</p>
+            </div>
+            
+            <div class="bg-slate-800/60 border border-slate-700/60 p-3 rounded-xl w-full sm:w-72">
+                <div class="flex justify-between text-xs font-semibold mb-1">
+                    <span class="text-slate-400">서버 전체 탐색 진행도</span>
+                    <span id="progress-text" class="text-emerald-400">0 / 0 (0.00%)</span>
+                </div>
+                <div class="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800">
+                    <div id="progress-bar" class="bg-gradient-to-r from-emerald-500 to-teal-500 h-full w-0 transition-all duration-300"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6 flex flex-col lg:flex-row gap-6 relative">
+        
+        <!-- 화면 전체 로딩 오버레이 -->
+        <div id="loading-overlay" class="absolute inset-0 z-40 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center rounded-xl border border-slate-800">
+            <span class="loader w-12 h-12 mb-4"></span>
+            <p class="text-emerald-400 font-medium">서버에서 약초 데이터를 불러오는 중입니다...</p>
+            <p class="text-xs text-slate-500 mt-2">최초 로딩 시 데이터가 많아 몇 초 정도 걸릴 수 있습니다.</p>
+        </div>
+
+        <!-- Sidebar: Filters & Herbs Selector -->
+        <section class="w-full lg:w-80 flex flex-col gap-6 shrink-0">
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="font-bold text-sm text-slate-300 flex items-center gap-1.5">🔍 포함할 약초 선택</h2>
+                    <button onclick="resetHerbSelection()" class="text-xs text-rose-400 hover:underline">선택 초기화</button>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <div class="text-[11px] font-bold text-amber-400 mb-1.5 tracking-wider">S 그룹 (+4)</div>
+                        <div class="flex flex-wrap gap-1.5" id="group-S-container"></div>
+                    </div>
+                    <div>
+                        <div class="text-[11px] font-bold text-purple-400 mb-1.5 tracking-wider">C 그룹 (+3)</div>
+                        <div class="flex flex-wrap gap-1.5" id="group-C-container"></div>
+                    </div>
+                    <div>
+                        <div class="text-[11px] font-bold text-blue-400 mb-1.5 tracking-wider">B 그룹 (+2)</div>
+                        <div class="flex flex-wrap gap-1.5" id="group-B-container"></div>
+                    </div>
+                    <div>
+                        <div class="text-[11px] font-bold text-emerald-400 mb-1.5 tracking-wider">A 그룹 (+1)</div>
+                        <div class="flex flex-wrap gap-1.5" id="group-A-container"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-4">
+                <h2 class="font-bold text-sm text-slate-300">⚙️ 상세 설정 및 필터</h2>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1.5">정렬 기준</label>
+                    <select id="filter-sort" onchange="filterChange()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200">
+                        <option value="default">재료 개수순 (기본)</option>
+                        <option value="score-desc">점수 높은 순 (내림차순)</option>
+                        <option value="score-asc">점수 낮은 순 (오름차순)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1.5">개수 선택</label>
+                    <select id="filter-count" onchange="filterChange()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200">
+                        <option value="all">전체보기 (3~5개)</option>
+                        <option value="3">3개 조합만</option>
+                        <option value="4">4개 조합만</option>
+                        <option value="5">5개 조합만</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1.5">서버 체크 상태</label>
+                    <select id="filter-status" onchange="filterChange()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200">
+                        <option value="all">모든 상태</option>
+                        <option value="unchecked">미시도 조합만</option>
+                        <option value="checked">시도 완료 조합만</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1.5">점수 범위 필터</label>
+                    <div class="flex items-center gap-2">
+                        <input type="number" id="filter-min-score" placeholder="최소" min="3" max="20" oninput="filterChange()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-center text-slate-200">
+                        <span class="text-slate-500 text-xs">~</span>
+                        <input type="number" id="filter-max-score" placeholder="최대" min="3" max="20" oninput="filterChange()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-center text-slate-200">
+                    </div>
+                </div>
+                <!-- 초기화 버튼은 서버 전체 데이터에 영향을 주므로 제거하거나 관리자용으로 빼는 것이 좋습니다 -->
+                <button onclick="refreshData()" class="w-full mt-2 bg-emerald-950/40 hover:bg-emerald-900/40 border border-emerald-800/60 text-emerald-400 py-2 rounded-lg text-xs font-medium transition">
+                    🔄 서버 최신 데이터 불러오기
+                </button>
+            </div>
+        </section>
+
+        <!-- Main Content: Combination List View -->
+        <section class="flex-1 flex flex-col bg-slate-900 border border-slate-800 rounded-xl overflow-hidden min-w-0">
+            <div class="p-4 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-3 bg-slate-900/50">
+                <div class="text-xs text-slate-400">
+                    검색 결과: <span id="filtered-count" class="text-emerald-400 font-bold">0</span>개 항목
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="changePage(-1)" id="btn-prev" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-2.5 py-1 rounded-md text-xs">◀ 이전</button>
+                    <div class="flex items-center gap-1.5 text-xs text-slate-300 px-1">
+                        <input type="number" id="page-input-top" onchange="goToPage(this.value)" class="w-10 bg-slate-950 border border-slate-700 rounded py-1 text-center text-emerald-400 font-bold">
+                        <span>/ <span id="total-pages-top">1</span></span>
+                    </div>
+                    <button onclick="changePage(1)" id="btn-next" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-2.5 py-1 rounded-md text-xs">다음 ▶</button>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-x-auto relative">
+                <table class="w-full text-left border-collapse min-w-[500px]">
+                    <thead>
+                        <tr class="border-b border-slate-800 bg-slate-950 text-slate-400 text-xs uppercase tracking-wider">
+                            <th class="py-3 px-4 font-semibold text-center w-16">시도여부</th>
+                            <th class="py-3 px-4 font-semibold text-center w-16">재료수</th>
+                            <th class="py-3 px-4 font-semibold">약초 조합 구성품</th>
+                            <th class="py-3 px-4 font-semibold text-center w-24">점수 총합</th>
+                        </tr>
+                    </thead>
+                    <tbody id="combination-tbody" class="text-xs divide-y divide-slate-800/60">
+                        <!-- Dynamic Rows Inject Here -->
+                    </tbody>
+                </table>
+                <div id="no-data-msg" class="hidden p-8 text-center text-slate-500 text-xs">조건에 부합하는 데이터가 없습니다.</div>
+            </div>
+
+            <div class="p-4 border-t border-slate-800 flex justify-end bg-slate-900/30">
+                <div class="flex items-center gap-2">
+                    <button onclick="changePage(-1)" id="btn-prev-bottom" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-2.5 py-1 rounded-md text-xs">◀ 이전</button>
+                    <div class="flex items-center gap-1.5 text-xs text-slate-300 px-1">
+                        <input type="number" id="page-input-bottom" onchange="goToPage(this.value)" class="w-10 bg-slate-950 border border-slate-700 rounded py-1 text-center text-emerald-400 font-bold">
+                        <span>/ <span id="total-pages-bottom">1</span></span>
+                    </div>
+                    <button onclick="changePage(1)" id="btn-next-bottom" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-2.5 py-1 rounded-md text-xs">다음 ▶</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // 백엔드 API 주소 (동일 컴퓨터 내에서 테스트)
+        const API_BASE_URL = "https://herb-tracker-api.onrender.com/api";
+
+        const herbs = [
+            { name: '금향과', group: 'S', color: 'border-amber-500/40 text-amber-400 bg-amber-950/20 hover:bg-amber-950/50' },
+            { name: '빙백설화', group: 'S', color: 'border-amber-500/40 text-amber-400 bg-amber-950/20 hover:bg-amber-950/50' },
+            { name: '월계엽', group: 'S', color: 'border-amber-500/40 text-amber-400 bg-amber-950/20 hover:bg-amber-950/50' },
+            { name: '철목영지', group: 'S', color: 'border-amber-500/40 text-amber-400 bg-amber-950/20 hover:bg-amber-950/50' },
+            { name: '홍련업화', group: 'S', color: 'border-amber-500/40 text-amber-400 bg-amber-950/20 hover:bg-amber-950/50' },
+            { name: '권엽', group: 'C', color: 'border-purple-500/40 text-purple-400 bg-purple-950/20 hover:bg-purple-950/50' },
+            { name: '금양광초', group: 'C', color: 'border-purple-500/40 text-purple-400 bg-purple-950/20 hover:bg-purple-950/50' },
+            { name: '옥향초', group: 'C', color: 'border-purple-500/40 text-purple-400 bg-purple-950/20 hover:bg-purple-950/50' },
+            { name: '인삼', group: 'C', color: 'border-purple-500/40 text-purple-400 bg-purple-950/20 hover:bg-purple-950/50' },
+            { name: '백향초', group: 'B', color: 'border-blue-500/40 text-blue-400 bg-blue-950/20 hover:bg-blue-950/50' },
+            { name: '자운초', group: 'B', color: 'border-blue-500/40 text-blue-400 bg-blue-950/20 hover:bg-blue-950/50' },
+            { name: '적주과', group: 'B', color: 'border-blue-500/40 text-blue-400 bg-blue-950/20 hover:bg-blue-950/50' },
+            { name: '황초', group: 'B', color: 'border-blue-500/40 text-blue-400 bg-blue-950/20 hover:bg-blue-950/50' },
+            { name: '흑성과', group: 'B', color: 'border-blue-500/40 text-blue-400 bg-blue-950/20 hover:bg-blue-950/50' },
+            { name: '녹태', group: 'A', color: 'border-emerald-500/40 text-emerald-400 bg-emerald-950/20 hover:bg-emerald-950/50' },
+            { name: '민들레', group: 'A', color: 'border-emerald-500/40 text-emerald-400 bg-emerald-950/20 hover:bg-emerald-950/50' },
+            { name: '생강', group: 'A', color: 'border-emerald-500/40 text-emerald-400 bg-emerald-950/20 hover:bg-emerald-950/50' },
+            { name: '영군버섯', group: 'A', color: 'border-emerald-500/40 text-emerald-400 bg-emerald-950/20 hover:bg-emerald-950/50' },
+            { name: '옥취엽', group: 'A', color: 'border-emerald-500/40 text-emerald-400 bg-emerald-950/20 hover:bg-emerald-950/50' }
+        ];
+
+        const groupBadges = {
+            'A': 'bg-emerald-950 text-emerald-400 border border-emerald-800/60',
+            'B': 'bg-blue-950 text-blue-400 border border-blue-800/60',
+            'C': 'bg-purple-950 text-purple-400 border border-purple-800/60',
+            'S': 'bg-amber-950 text-amber-400 border border-amber-800/60'
+        };
+
+        let allCombinations = [];
+        let filteredCombinations = [];
+        let selectedHerbs = new Set();
+        let currentPage = 1;
+        const itemsPerPage = 100;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            renderHerbSelectionUI();
+            fetchCombinationsFromServer(); // 🌟 로컬 계산 대신 서버에서 데이터 호출
+        });
+
+        function renderHerbSelectionUI() {
+            herbs.forEach(herb => {
+                const container = document.getElementById(`group-${herb.group}-container`);
+                const btn = document.createElement('button');
+                btn.id = `herb-btn-${herb.name}`;
+                btn.className = `border text-xs px-2.5 py-1.5 rounded-lg font-medium transition cursor-pointer flex items-center gap-1 ${herb.color}`;
+                btn.innerHTML = `<span>${herb.name}</span>`;
+                btn.onclick = () => toggleHerbSelection(herb.name);
+                container.appendChild(btn);
+            });
+        }
+
+        // 🌟 [핵심] 백엔드(FastAPI)에서 데이터 가져오기
+        async function fetchCombinationsFromServer() {
+            const overlay = document.getElementById('loading-overlay');
+            overlay.classList.remove('hidden');
+            document.getElementById('server-status').innerText = "데이터 다운로드 중...";
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/combinations`);
+                if (!response.ok) throw new Error("서버 응답 오류");
+                
+                const data = await response.json();
+                allCombinations = data; // 서버에서 받아온 16,473개 데이터 적용
+                
+                document.getElementById('server-status').innerText = "🟢 서버와 동기화됨";
+                document.getElementById('server-status').className = "text-xs font-medium text-emerald-400 mt-1";
+                
+                updateProgressBar();
+                applyFiltersAndRender();
+            } catch (error) {
+                console.error("데이터 로드 실패:", error);
+                document.getElementById('server-status').innerText = "🔴 서버 연결 실패 (API 서버를 켜주세요)";
+                document.getElementById('server-status').className = "text-xs font-medium text-rose-400 mt-1";
+                alert("서버에 연결할 수 없습니다. 터미널에서 uvicorn 서버가 실행 중인지 확인하세요.");
+            } finally {
+                overlay.classList.add('hidden');
+            }
+        }
+
+        // 수동 새로고침 버튼
+        function refreshData() {
+            fetchCombinationsFromServer();
+        }
+
+        function updateProgressBar() {
+            const total = allCombinations.length;
+            const current = allCombinations.filter(c => c.is_checked).length;
+            const percent = total === 0 ? 0 : ((current / total) * 100).toFixed(2);
+            
+            document.getElementById('progress-text').innerText = `${current.toLocaleString()} / ${total.toLocaleString()} (${percent}%)`;
+            document.getElementById('progress-bar').style.width = `${percent}%`;
+        }
+
+        // 필터 및 정렬 로직 (이전과 동일)
+        function toggleHerbSelection(name) {
+            const btn = document.getElementById(`herb-btn-${name}`);
+            if (selectedHerbs.has(name)) {
+                selectedHerbs.delete(name);
+                btn.classList.remove('bg-slate-100', 'text-slate-950', 'font-bold', 'border-white');
+                btn.classList.add('bg-slate-950/20');
+            } else {
+                selectedHerbs.add(name);
+                btn.classList.add('bg-slate-100', 'text-slate-950', 'font-bold', 'border-white');
+                btn.classList.remove('bg-slate-950/20');
+            }
+            currentPage = 1;
+            applyFiltersAndRender();
+        }
+
+        function resetHerbSelection() {
+            selectedHerbs.forEach(name => {
+                const btn = document.getElementById(`herb-btn-${name}`);
+                if(btn) {
+                    btn.classList.remove('bg-slate-100', 'text-slate-950', 'font-bold', 'border-white');
+                    btn.classList.add('bg-slate-950/20');
+                }
+            });
+            selectedHerbs.clear();
+            currentPage = 1;
+            applyFiltersAndRender();
+        }
+
+        function filterChange() {
+            currentPage = 1;
+            applyFiltersAndRender();
+        }
+
+        function applyFiltersAndRender() {
+            const filterCount = document.getElementById('filter-count').value;
+            const filterStatus = document.getElementById('filter-status').value;
+            const minScore = parseInt(document.getElementById('filter-min-score').value) || 0;
+            const maxScore = parseInt(document.getElementById('filter-max-score').value) || 99;
+            const sortMode = document.getElementById('filter-sort').value;
+
+            filteredCombinations = allCombinations.filter(item => {
+                if (filterCount !== 'all' && item.count !== parseInt(filterCount)) return false;
+                if (filterStatus === 'checked' && !item.is_checked) return false;
+                if (filterStatus === 'unchecked' && item.is_checked) return false;
+                if (item.score < minScore || item.score > maxScore) return false;
+                
+                if (selectedHerbs.size > 0) {
+                    for (let herbName of selectedHerbs) {
+                        if (!item.id.includes(herbName)) return false;
+                    }
+                }
+                return true;
+            });
+
+            filteredCombinations.sort((a, b) => {
+                if (sortMode === 'score-desc') {
+                    if (b.score !== a.score) return b.score - a.score;
+                    return a.count - b.count;
+                } else if (sortMode === 'score-asc') {
+                    if (a.score !== b.score) return a.score - b.score;
+                    return a.count - b.count;
+                } else {
+                    if (a.count !== b.count) return a.count - b.count;
+                    return b.score - a.score;
+                }
+            });
+
+            document.getElementById('filtered-count').innerText = filteredCombinations.length.toLocaleString();
+            renderTable();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('combination-tbody');
+            const noData = document.getElementById('no-data-msg');
+            tbody.innerHTML = '';
+
+            if (filteredCombinations.length === 0) {
+                noData.classList.remove('hidden');
+                updatePaginationControls(0);
+                return;
+            }
+            noData.classList.add('hidden');
+
+            const totalPages = Math.ceil(filteredCombinations.length / itemsPerPage);
+            if (currentPage > totalPages) currentPage = totalPages || 1;
+
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, filteredCombinations.length);
+            
+            const pageItems = filteredCombinations.slice(startIndex, endIndex);
+
+            pageItems.forEach((item) => {
+                const tr = document.createElement('tr');
+                tr.className = item.is_checked 
+                    ? "bg-emerald-950/10 hover:bg-emerald-950/20 transition border-b border-slate-800/40" 
+                    : "hover:bg-slate-800/30 transition border-b border-slate-800/40";
+
+                let herbBadgesHTML = item.herbs.map(h => {
+                    return `<span class="inline-block px-2 py-0.5 rounded text-[11px] font-medium ${groupBadges[h.group]}">${h.name}</span>`;
+                }).join(' <span class="text-slate-600 text-xs">+</span> ');
+
+                tr.innerHTML = `
+                    <td class="py-3 px-4 text-center">
+                        <input type="checkbox" ${item.is_checked ? 'checked' : ''} 
+                            onclick="toggleRowCheck('${item.id}', this)"
+                            class="w-4 h-4 rounded text-emerald-500 bg-slate-950 border-slate-700 cursor-pointer accent-emerald-500 disabled:opacity-50">
+                    </td>
+                    <td class="py-3 px-4 text-center text-slate-400 font-medium">${item.count}개</td>
+                    <td class="py-3 px-4 font-normal text-slate-200 flex flex-wrap items-center gap-1">${herbBadgesHTML}</td>
+                    <td class="py-3 px-4 text-center font-bold text-slate-300 bg-slate-950/20">${item.score} 점</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            updatePaginationControls(totalPages);
+        }
+
+        // 🌟 [핵심] 서버로 체크 상태 전송하기
+        async function toggleRowCheck(id, checkbox) {
+            const isChecked = checkbox.checked;
+            checkbox.disabled = true; // 처리 중 중복 클릭 방지
+            
+            try {
+                // 1. 서버에 상태 업데이트 요청 (POST)
+                const response = await fetch(`${API_BASE_URL}/check`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ combo_id: id, is_checked: isChecked })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // 2. 서버 업데이트 성공 시 로컬 변수(화면) 갱신
+                    const found = allCombinations.find(c => c.id === id);
+                    if (found) found.is_checked = isChecked;
+
+                    if (isChecked) {
+                        checkbox.closest('tr').classList.add('bg-emerald-950/10');
+                    } else {
+                        checkbox.closest('tr').classList.remove('bg-emerald-950/10');
+                    }
+                    
+                    updateProgressBar();
+                    
+                    // 현재 필터 상태에 따라 바로 리스트 재렌더링 (체크 필터 작동 중일 때)
+                    const filterStatus = document.getElementById('filter-status').value;
+                    if (filterStatus !== 'all') {
+                        applyFiltersAndRender();
+                    }
+                } else {
+                    throw new Error("서버 업데이트 실패");
+                }
+            } catch (error) {
+                console.error("오류:", error);
+                alert("서버 통신 중 오류가 발생했습니다. 다시 시도해주세요.");
+                checkbox.checked = !isChecked; // 실패 시 체크박스 롤백
+            } finally {
+                checkbox.disabled = false; // 체크박스 다시 활성화
+            }
+        }
+
+        // 페이지 네이션
+        function updatePaginationControls(totalPages) {
+            if(totalPages === 0) totalPages = 1;
+            document.getElementById('total-pages-top').innerText = totalPages;
+            document.getElementById('total-pages-bottom').innerText = totalPages;
+            document.getElementById('page-input-top').value = currentPage;
+            document.getElementById('page-input-bottom').value = currentPage;
+
+            const prevDisabled = (currentPage === 1);
+            const nextDisabled = (currentPage === totalPages);
+            
+            document.getElementById('btn-prev').disabled = prevDisabled;
+            document.getElementById('btn-prev-bottom').disabled = prevDisabled;
+            document.getElementById('btn-next').disabled = nextDisabled;
+            document.getElementById('btn-next-bottom').disabled = nextDisabled;
+        }
+
+        function changePage(direction) {
+            currentPage += direction;
+            renderTable();
+            document.getElementById('filtered-count').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function goToPage(pageValue) {
+            const totalPages = Math.ceil(filteredCombinations.length / itemsPerPage) || 1;
+            let p = parseInt(pageValue);
+            if (isNaN(p) || p < 1) p = 1;
+            if (p > totalPages) p = totalPages;
+            currentPage = p;
+            renderTable();
+            document.getElementById('filtered-count').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    </script>
+</body>
+</html>
