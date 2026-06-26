@@ -83,11 +83,21 @@
 
         <section class="flex-1 flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden min-w-0">
             <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
-                <span class="text-xs">결과: <b id="filtered-count" class="text-emerald-500 font-bold">0</b>개</span>
-                <div class="flex gap-2 items-center">
-                    <button onclick="changePage(-1)" class="px-2.5 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-xs transition hover:bg-slate-100">◀</button>
-                    <input type="number" id="page-input" onchange="goToPage(this.value)" class="w-12 bg-transparent text-center text-xs font-bold text-emerald-600 dark:text-emerald-400 focus:outline-none border-b border-slate-300 dark:border-slate-700">
-                    <button onclick="changePage(1)" class="px-2.5 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-xs transition hover:bg-slate-100">▶</button>
+                <span class="text-xs text-slate-600 dark:text-slate-400">검색 결과: <b id="filtered-count" class="text-emerald-600 dark:text-emerald-400">0</b>개</span>
+                
+                <div class="flex items-center gap-3">
+                    <button onclick="changePage(-1)" id="btn-prev" class="flex items-center gap-1 px-3 py-1.5 bg-white dark:bg-[#151b2b] border border-slate-300 dark:border-slate-700/60 rounded-lg text-[13px] font-medium text-slate-600 dark:text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                        <span class="text-[10px] opacity-70">◀</span> 이전
+                    </button>
+                    
+                    <div class="flex items-center gap-2 text-[13px] font-medium text-slate-600 dark:text-slate-400">
+                        <input type="number" id="page-input" onchange="goToPage(this.value)" class="w-12 bg-slate-50 dark:bg-[#0b0f19] border border-slate-300 dark:border-slate-700/80 rounded-lg py-1.5 text-center text-emerald-600 dark:text-emerald-400 font-bold focus:outline-none focus:border-emerald-500 transition-colors" value="1">
+                        <span>/ <span id="total-pages">1</span></span>
+                    </div>
+
+                    <button onclick="changePage(1)" id="btn-next" class="flex items-center gap-1 px-3 py-1.5 bg-white dark:bg-[#151b2b] border border-slate-300 dark:border-slate-700/60 rounded-lg text-[13px] font-medium text-slate-700 dark:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                        다음 <span class="text-[10px] opacity-70">▶</span>
+                    </button>
                 </div>
             </div>
             
@@ -131,7 +141,6 @@
 
         const groupScores = { 'S': 4, 'C': 3, 'B': 2, 'A': 1 }; 
         
-        // 🌟 첨부파일과 동일한 그룹 뱃지 스타일
         const groupStyles = {
             'A': 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800/60',
             'B': 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-800/60',
@@ -139,7 +148,6 @@
             'S': 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800/60'
         };
 
-        // 🌟 첨부파일과 동일한 사이드바 버튼 색상 스타일
         const btnStylesUnselected = {
             'A': 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-500/40 hover:bg-emerald-100 dark:hover:bg-emerald-950/50',
             'B': 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-500/40 hover:bg-blue-100 dark:hover:bg-blue-950/50',
@@ -155,6 +163,7 @@
         };
 
         let allCombinations = [], filtered = [], selected = new Set(), currentPage = 1;
+        const itemsPerPage = 100;
         
         let userNickname = localStorage.getItem("user_nickname");
         if (!userNickname) {
@@ -187,7 +196,6 @@
         function renderHerbUI() {
             const cont = document.getElementById('herb-container');
             cont.innerHTML = '';
-            // 첨부파일 순서(S -> C -> B -> A)에 맞게 렌더링
             ['S','C','B','A'].forEach(g => {
                 cont.innerHTML += `<div class="mb-3"><div class="text-[11px] font-bold opacity-60 mb-1.5 tracking-wider">${g} 그룹 (+${groupScores[g]})</div><div id="group-${g}" class="flex flex-wrap gap-1.5"></div></div>`;
                 herbs.filter(h => h.group === g).forEach(h => {
@@ -219,7 +227,7 @@
 
         function toggleHerb(name) {
             if (selected.has(name)) selected.delete(name); else selected.add(name);
-            renderHerbUI(); // 색상 변경을 위해 버튼 UI 다시 렌더링
+            renderHerbUI();
             applyFiltersAndSort();
         }
 
@@ -251,12 +259,20 @@
 
         function render() {
             document.getElementById('filtered-count').innerText = filtered.length.toLocaleString();
+            
+            // 🌟 페이지네이션 상태 업데이트
+            const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
+            document.getElementById('total-pages').innerText = totalPages;
             document.getElementById('page-input').value = currentPage;
             
+            // 버튼 활성화/비활성화 처리
+            document.getElementById('btn-prev').disabled = (currentPage <= 1);
+            document.getElementById('btn-next').disabled = (currentPage >= totalPages);
+
             const tbody = document.getElementById('combination-tbody');
             tbody.innerHTML = '';
             
-            const pageData = filtered.slice((currentPage-1)*100, currentPage*100);
+            const pageData = filtered.slice((currentPage-1) * itemsPerPage, currentPage * itemsPerPage);
             if(pageData.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-500">조건에 맞는 데이터가 없습니다.</td></tr>`;
                 return;
@@ -265,7 +281,6 @@
             pageData.forEach(c => {
                 const canEdit = isAdmin || !c.is_checked || c.last_modified_by === userNickname;
                 
-                // 🌟 요기! 약초 뱃지 생성 시 (+점수) 삭제
                 let herbBadgesHTML = c.parsed.map(hName => {
                     const hObj = herbs.find(x => x.name === hName.trim());
                     const style = hObj ? groupStyles[hObj.group] : 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300';
@@ -411,8 +426,20 @@
 
         function toggleTheme() { document.documentElement.classList.toggle('dark'); }
         function resetHerbSelection() { selected.clear(); applyFiltersAndSort(); renderHerbUI(); }
-        function goToPage(p) { currentPage = parseInt(p) || 1; render(); }
-        function changePage(d) { currentPage = Math.max(1, currentPage + d); render(); }
+        
+        // 🌟 페이지 이동 로직 (범위 제한 포함)
+        function goToPage(p) { 
+            const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
+            let page = parseInt(p) || 1;
+            currentPage = Math.max(1, Math.min(totalPages, page));
+            render(); 
+        }
+        
+        function changePage(d) { 
+            const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
+            currentPage = Math.max(1, Math.min(totalPages, currentPage + d));
+            render(); 
+        }
     </script>
 </body>
 </html>
