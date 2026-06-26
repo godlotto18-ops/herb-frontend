@@ -40,9 +40,10 @@
 
             <div class="flex gap-2 items-center">
                 <button onclick="toggleTheme()" class="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg text-sm transition">🌙</button>
+                <button onclick="openStatsModal()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition">📊 통계</button>
                 <button onclick="loginAsAdmin()" id="admin-btn" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white dark:bg-slate-200 dark:text-slate-900 rounded-lg text-xs font-bold transition">🔒 관리자</button>
                 <button onclick="logoutAdmin()" id="logout-btn" style="display: none;" class="px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-xs font-bold transition">🔓 로그아웃</button>
-                <button onclick="openLogsModal()" class="px-3 py-1.5 bg-slate-600 hover:bg-slate-700 text-white rounded-lg text-xs font-bold transition">📜 로그보기</button>
+                <button onclick="openLogsModal()" class="px-3 py-1.5 bg-slate-600 hover:bg-slate-700 text-white rounded-lg text-xs font-bold transition">📜 로그</button>
             </div>
         </div>
     </header>
@@ -62,6 +63,10 @@
 
             <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-4">
                 <h2 class="font-bold text-sm">⚙️ 필터 및 정렬</h2>
+                <!-- 텍스트 검색 -->
+                <div>
+                    <input type="text" id="search-text" oninput="applyFiltersAndSort()" placeholder="🔎 약초명 검색..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-emerald-500 transition-colors">
+                </div>
                 <div>
                     <select id="filter-count" onchange="applyFiltersAndSort()" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none cursor-pointer">
                         <option value="all">개수: 전체보기</option>
@@ -95,12 +100,10 @@
                     <button onclick="changePage(-1)" id="btn-prev" class="flex items-center gap-1 px-3 py-1.5 bg-white dark:bg-[#151b2b] border border-slate-300 dark:border-slate-700/60 rounded-lg text-[13px] font-medium text-slate-600 dark:text-slate-400 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                         <span class="text-[10px] opacity-70">◀</span> 이전
                     </button>
-                    
                     <div class="flex items-center gap-2 text-[13px] font-medium text-slate-600 dark:text-slate-400">
                         <input type="number" id="page-input" onchange="goToPage(this.value)" class="w-12 bg-slate-50 dark:bg-[#0b0f19] border border-slate-300 dark:border-slate-700/80 rounded-lg py-1.5 text-center text-emerald-600 dark:text-emerald-400 font-bold focus:outline-none focus:border-emerald-500 transition-colors" value="1">
                         <span>/ <span id="total-pages">1</span></span>
                     </div>
-
                     <button onclick="changePage(1)" id="btn-next" class="flex items-center gap-1 px-3 py-1.5 bg-white dark:bg-[#151b2b] border border-slate-300 dark:border-slate-700/60 rounded-lg text-[13px] font-medium text-slate-700 dark:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                         다음 <span class="text-[10px] opacity-70">▶</span>
                     </button>
@@ -124,6 +127,18 @@
         </section>
     </main>
 
+    <!-- 통계 모달 -->
+    <div id="stats-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white dark:bg-slate-900 w-11/12 max-w-2xl rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[85vh]">
+            <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50 rounded-t-xl">
+                <h3 class="font-bold text-sm">📊 탐색 통계</h3>
+                <button onclick="closeStatsModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">✖</button>
+            </div>
+            <div class="p-5 overflow-y-auto flex-1 space-y-5" id="stats-content"></div>
+        </div>
+    </div>
+
+    <!-- 로그 모달 -->
     <div id="logs-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center backdrop-blur-sm transition-opacity">
         <div class="bg-white dark:bg-slate-900 w-11/12 max-w-2xl rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[80vh]">
             <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50 rounded-t-xl">
@@ -252,11 +267,13 @@
                 clearTimeout(bannerTimer);
                 banner.classList.add('hidden');
                 allCombinations = (await res.json()).map(c => {
-                    const parsed = Array.isArray(c.herbs) ? c.herbs.map(h => typeof h === 'object' ? Object.values(h)[0] : h) : String(c.herbs).split(',');
+                    const parsed = Array.isArray(c.herbs)
+                        ? c.herbs.map(h => typeof h === 'object' ? Object.values(h)[0] : h)
+                        : String(c.herbs).split(',').map(h => h.trim());
                     let totalScore = 0;
                     parsed.forEach(hName => {
                         const hObj = herbs.find(x => x.name === hName.trim());
-                        if(hObj) totalScore += groupScores[hObj.group];
+                        if (hObj) totalScore += groupScores[hObj.group];
                     });
                     return { ...c, parsed, totalScore };
                 });
@@ -279,12 +296,15 @@
             const filterCount = document.getElementById('filter-count').value;
             const filterStatus = document.getElementById('filter-status').value;
             const sortType = document.getElementById('sort-type').value;
+            const searchText = document.getElementById('search-text').value.trim();
 
             filtered = allCombinations.filter(c => {
                 if (filterCount !== 'all' && c.count.toString() !== filterCount) return false;
                 if (filterStatus === 'checked' && !c.is_checked) return false;
                 if (filterStatus === 'unchecked' && c.is_checked) return false;
                 if (selected.size > 0 && !Array.from(selected).every(s => c.parsed.includes(s))) return false;
+                // 텍스트 검색: 조합 내 약초명 중 하나라도 포함되면 통과
+                if (searchText && !c.parsed.some(h => h.includes(searchText))) return false;
                 return true;
             });
             
@@ -307,7 +327,6 @@
             const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
             document.getElementById('total-pages').innerText = totalPages;
             document.getElementById('page-input').value = currentPage;
-            
             document.getElementById('btn-prev').disabled = (currentPage <= 1);
             document.getElementById('btn-next').disabled = (currentPage >= totalPages);
 
@@ -315,14 +334,13 @@
             tbody.innerHTML = '';
             
             const pageData = filtered.slice((currentPage-1) * itemsPerPage, currentPage * itemsPerPage);
-            if(pageData.length === 0) {
+            if (pageData.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-500">조건에 맞는 데이터가 없습니다.</td></tr>`;
                 return;
             }
 
             pageData.forEach(c => {
                 const canEdit = isAdmin || !c.is_checked || c.last_modified_by === userNickname;
-                
                 let herbBadgesHTML = c.parsed.map(hName => {
                     const hObj = herbs.find(x => x.name === hName.trim());
                     const style = hObj ? groupStyles[hObj.group] : 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300';
@@ -411,6 +429,100 @@
             document.getElementById('progress-bar').style.width = `${pct}%`;
         }
 
+        // ── 통계 모달 ──────────────────────────────────────────
+        function openStatsModal() {
+            document.getElementById('stats-modal').classList.remove('hidden');
+            renderStats();
+        }
+
+        function closeStatsModal() {
+            document.getElementById('stats-modal').classList.add('hidden');
+        }
+
+        function statBar(pct) {
+            return `<div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 mt-1">
+                <div class="bg-gradient-to-r from-emerald-500 to-teal-500 h-full rounded-full transition-all" style="width:${pct}%"></div>
+            </div>`;
+        }
+
+        function renderStats() {
+            const content = document.getElementById('stats-content');
+
+            // 전체
+            const total = allCombinations.length;
+            const done  = allCombinations.filter(c => c.is_checked).length;
+            const pct   = total ? (done / total * 100).toFixed(2) : 0;
+
+            // 개수별 (3/4/5개)
+            const byCount = [3, 4, 5].map(n => {
+                const list = allCombinations.filter(c => c.count === n);
+                const d    = list.filter(c => c.is_checked).length;
+                const p    = list.length ? (d / list.length * 100).toFixed(2) : 0;
+                return { n, total: list.length, done: d, pct: p };
+            });
+
+            // 그룹별 (조합에 해당 그룹이 하나라도 포함된 경우)
+            const byGroup = ['S','C','B','A'].map(g => {
+                const list = allCombinations.filter(c => c.parsed.some(hName => {
+                    const h = herbs.find(x => x.name === hName.trim());
+                    return h && h.group === g;
+                }));
+                const d  = list.filter(c => c.is_checked).length;
+                const p  = list.length ? (d / list.length * 100).toFixed(2) : 0;
+                return { g, total: list.length, done: d, pct: p };
+            });
+
+            const groupColor = {
+                'S': 'text-amber-600 dark:text-amber-400',
+                'C': 'text-purple-600 dark:text-purple-400',
+                'B': 'text-blue-600 dark:text-blue-400',
+                'A': 'text-emerald-600 dark:text-emerald-400'
+            };
+
+            content.innerHTML = `
+                <!-- 전체 진행률 -->
+                <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-bold text-sm">🌿 전체 진행률</span>
+                        <span class="text-emerald-600 dark:text-emerald-400 font-bold">${done.toLocaleString()} / ${total.toLocaleString()} (${pct}%)</span>
+                    </div>
+                    ${statBar(pct)}
+                </div>
+
+                <!-- 개수별 -->
+                <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                    <div class="font-bold text-sm mb-3">📦 재료 개수별 진행률</div>
+                    <div class="space-y-3">
+                        ${byCount.map(r => `
+                        <div>
+                            <div class="flex justify-between text-xs mb-0.5">
+                                <span class="font-medium">${r.n}개 조합</span>
+                                <span class="text-emerald-600 dark:text-emerald-400">${r.done.toLocaleString()} / ${r.total.toLocaleString()} (${r.pct}%)</span>
+                            </div>
+                            ${statBar(r.pct)}
+                        </div>`).join('')}
+                    </div>
+                </div>
+
+                <!-- 그룹별 -->
+                <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                    <div class="font-bold text-sm mb-1">⭐ 등급별 포함 조합 진행률</div>
+                    <div class="text-[10px] text-slate-400 mb-3">해당 등급 약초가 1개 이상 포함된 조합 기준</div>
+                    <div class="space-y-3">
+                        ${byGroup.map(r => `
+                        <div>
+                            <div class="flex justify-between text-xs mb-0.5">
+                                <span class="font-bold ${groupColor[r.g]}">${r.g} 등급 포함</span>
+                                <span class="text-emerald-600 dark:text-emerald-400">${r.done.toLocaleString()} / ${r.total.toLocaleString()} (${r.pct}%)</span>
+                            </div>
+                            ${statBar(r.pct)}
+                        </div>`).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // ── 로그 모달 ──────────────────────────────────────────
         async function openLogsModal() {
             document.getElementById('logs-modal').classList.remove('hidden');
             const content = document.getElementById('logs-content');
@@ -427,21 +539,15 @@
 
                 let html = '';
                 logs.forEach(l => {
-                    const time = new Date(l.timestamp).toLocaleString("ko-KR", { 
+                    const time = new Date(l.timestamp).toLocaleString("ko-KR", {
                         timeZone: "Asia/Seoul",
-                        year: 'numeric', month: '2-digit', day: '2-digit', 
-                        hour: '2-digit', minute: '2-digit', second: '2-digit' 
+                        year: 'numeric', month: '2-digit', day: '2-digit',
+                        hour: '2-digit', minute: '2-digit', second: '2-digit'
                     });
 
-                    // 조합 약초 목록
                     const herbsText = parseHerbs(l.herbs);
-
-                    // 변경 전 결과 기록
-                    const prevText = l.prev_result_text ? escapeHtml(l.prev_result_text) : '<span class="text-slate-400 italic">없음</span>';
-                    // 변경 후 현재 결과 기록 (현재 DB 값)
-                    const currText = l.current_result_text ? escapeHtml(l.current_result_text) : '<span class="text-slate-400 italic">없음</span>';
-
-                    // 체크 상태 변화 표시
+                    const prevText  = l.prev_result_text ? escapeHtml(l.prev_result_text) : '<span class="text-slate-400 italic">없음</span>';
+                    const currText  = l.current_result_text ? escapeHtml(l.current_result_text) : '<span class="text-slate-400 italic">없음</span>';
                     const prevChecked = l.prev_is_checked ? '✅ 완료' : '⬜ 미완료';
                     const actionLabel = l.action === '체크' ? '✅ 완료로 변경' : '⬜ 미완료로 변경';
 
@@ -459,8 +565,8 @@
                             <div class="font-semibold mb-1"><b class="text-emerald-600 dark:text-emerald-400">${escapeHtml(l.nickname)}</b>님이 <b>${actionLabel}</b></div>
                             <div class="text-slate-600 dark:text-slate-300 font-medium mb-1.5">🌿 ${escapeHtml(herbsText)}</div>
                             <div class="text-[10px] space-y-0.5 text-slate-500">
-                                <div>변경 전 상태: <span class="font-medium">${prevChecked}</span> / 결과 기록: ${prevText}</div>
-                                <div>변경 후 상태: <span class="font-medium">${l.action === '체크' ? '✅ 완료' : '⬜ 미완료'}</span> / 결과 기록: ${currText}</div>
+                                <div>변경 전: <span class="font-medium">${prevChecked}</span> / 결과 기록: ${prevText}</div>
+                                <div>변경 후: <span class="font-medium">${l.action === '체크' ? '✅ 완료' : '⬜ 미완료'}</span> / 결과 기록: ${currText}</div>
                             </div>
                         </div>
                         ${rollbackBtn}
@@ -478,7 +584,6 @@
 
         async function executeRollback(logId, comboId, version) {
             if (!confirm("이 작업이 실행되기 직전의 상태로 되돌립니다.\n이 시점 이후의 로그도 함께 삭제됩니다.\n계속하시겠습니까?")) return;
-            
             try {
                 const res = await fetch(`${API_BASE_URL}/rollback`, {
                     method: 'POST',
@@ -490,7 +595,6 @@
                         version: version
                     })
                 });
-                
                 const result = await res.json();
                 if (result.success) {
                     alert("성공적으로 복구되었습니다.");
@@ -524,18 +628,17 @@
 
         function toggleTheme() { document.documentElement.classList.toggle('dark'); }
         function resetHerbSelection() { selected.clear(); applyFiltersAndSort(); renderHerbUI(); }
-        
-        function goToPage(p) { 
+
+        function goToPage(p) {
             const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
-            let page = parseInt(p) || 1;
-            currentPage = Math.max(1, Math.min(totalPages, page));
-            render(); 
+            currentPage = Math.max(1, Math.min(totalPages, parseInt(p) || 1));
+            render();
         }
-        
-        function changePage(d) { 
+
+        function changePage(d) {
             const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
             currentPage = Math.max(1, Math.min(totalPages, currentPage + d));
-            render(); 
+            render();
         }
     </script>
 </body>
