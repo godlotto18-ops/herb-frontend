@@ -6,98 +6,60 @@
     <title>약초 조합 도감</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: { extend: {} }
-        }
+        tailwind.config = { darkMode: 'class', theme: { extend: {} } }
     </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
         body { font-family: 'Noto Sans KR', 'Inter', sans-serif; transition: background-color 0.3s, color 0.3s; }
-        
-        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
         .dark ::-webkit-scrollbar-thumb { background: #475569; }
         ::-webkit-scrollbar-thumb:hover { background: #64748b; }
-        
-        /* Hide number input arrows */
         input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-        input[type=number] { -moz-appearance: textfield; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col">
 
-    <header class="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/50 backdrop-blur sticky top-0 z-50 transition-colors">
-        <div class="max-w-5xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div class="flex items-center gap-4">
-                <div>
-                    <h1 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-500 flex items-center gap-2">
-                        🌿 약초 조합 도감
-                    </h1>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1" id="user-greeting">접속 중...</p>
-                </div>
-                <div class="flex gap-2">
-                    <button onclick="toggleTheme()" class="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg text-sm transition-colors" title="테마 변경">
-                        <span id="theme-icon">🌙</span>
-                    </button>
-                    <button onclick="loginAsAdmin()" id="admin-btn" class="px-3 py-1.5 bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900 rounded-lg text-xs font-bold transition-colors">
-                        🔒 관리자
-                    </button>
-                </div>
+    <header class="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/50 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-500">🌿 약초 조합 도감</h1>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1" id="user-greeting">접속 중...</p>
             </div>
             
-            <div class="bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 p-3 rounded-xl w-full sm:w-72 transition-colors">
-                <div class="flex justify-between text-xs font-semibold mb-1">
+            <div class="bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 p-2 rounded-xl w-full sm:w-64 transition-colors">
+                <div class="flex justify-between text-[11px] font-semibold mb-1">
                     <span class="text-slate-600 dark:text-slate-400">전체 탐색 진행도</span>
                     <span id="progress-text" class="text-emerald-600 dark:text-emerald-400">0 / 0 (0.00%)</span>
                 </div>
-                <div class="w-full bg-slate-300 dark:bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-300 dark:border-slate-800">
+                <div class="w-full bg-slate-300 dark:bg-slate-950 rounded-full h-1.5 overflow-hidden">
                     <div id="progress-bar" class="bg-gradient-to-r from-emerald-500 to-teal-500 h-full w-0 transition-all duration-300"></div>
                 </div>
+            </div>
+
+            <div class="flex gap-2 items-center">
+                <button onclick="toggleTheme()" class="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg text-sm transition" title="테마 변경">🌙</button>
+                <button onclick="loginAsAdmin()" id="admin-btn" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white dark:bg-slate-200 dark:text-slate-900 rounded-lg text-xs font-bold transition">🔒 관리자</button>
+                <button onclick="logoutAdmin()" id="logout-btn" style="display: none;" class="px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-xs font-bold transition">🔓 로그아웃</button>
+                <button onclick="showLogs()" class="px-3 py-1.5 bg-slate-600 hover:bg-slate-700 text-white rounded-lg text-xs font-bold transition">📜 로그</button>
             </div>
         </div>
     </header>
 
-    <main class="flex-1 max-w-5xl w-full mx-auto px-4 py-6 flex flex-col md:flex-row gap-6">
-        
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6 flex flex-col md:flex-row gap-6">
         <section class="w-full md:w-64 flex flex-col gap-6 shrink-0">
-            
-            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 transition-colors">
-                <div class="flex justify-between items-center mb-3">
-                    <h2 class="font-bold text-sm text-slate-800 dark:text-slate-300 flex items-center gap-1.5">
-                        🔍 포함할 약초
-                    </h2>
-                    <button onclick="resetHerbSelection()" class="text-xs text-rose-500 dark:text-rose-400 hover:underline">초기화</button>
-                </div>
-                
-                <div class="space-y-4">
-                    <div>
-                        <div class="text-[11px] font-bold text-amber-600 dark:text-amber-400 mb-1.5 tracking-wider">S 그룹</div>
-                        <div class="flex flex-wrap gap-1.5" id="group-S-container"></div>
-                    </div>
-                    <div>
-                        <div class="text-[11px] font-bold text-purple-600 dark:text-purple-400 mb-1.5 tracking-wider">C 그룹</div>
-                        <div class="flex flex-wrap gap-1.5" id="group-C-container"></div>
-                    </div>
-                    <div>
-                        <div class="text-[11px] font-bold text-blue-600 dark:text-blue-400 mb-1.5 tracking-wider">B 그룹</div>
-                        <div class="flex flex-wrap gap-1.5" id="group-B-container"></div>
-                    </div>
-                    <div>
-                        <div class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mb-1.5 tracking-wider">A 그룹</div>
-                        <div class="flex flex-wrap gap-1.5" id="group-A-container"></div>
-                    </div>
-                </div>
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+                <div class="flex justify-between mb-3"><h2 class="font-bold text-sm">🔍 포함할 약초</h2><button onclick="resetHerbSelection()" class="text-xs text-rose-500 hover:underline">초기화</button></div>
+                <div class="space-y-4" id="herb-container"></div>
             </div>
 
-            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-4 transition-colors">
-                <h2 class="font-bold text-sm text-slate-800 dark:text-slate-300">⚙️ 필터</h2>
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-4">
+                <h2 class="font-bold text-sm">⚙️ 필터 및 정렬</h2>
                 
                 <div>
                     <label class="block text-xs text-slate-600 dark:text-slate-400 mb-1.5">개수 선택</label>
-                    <select id="filter-count" onchange="filterChange()" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:border-emerald-500 cursor-pointer">
+                    <select id="filter-count" onchange="applyFiltersAndSort()" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none cursor-pointer">
                         <option value="all">전체보기</option>
                         <option value="3">3개 조합만</option>
                         <option value="4">4개 조합만</option>
@@ -107,46 +69,46 @@
 
                 <div>
                     <label class="block text-xs text-slate-600 dark:text-slate-400 mb-1.5">체크 상태</label>
-                    <select id="filter-status" onchange="filterChange()" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:border-emerald-500 cursor-pointer">
+                    <select id="filter-status" onchange="applyFiltersAndSort()" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none cursor-pointer">
                         <option value="all">모든 상태</option>
                         <option value="unchecked">미시도 조합만</option>
                         <option value="checked">시도 완료 조합만</option>
                     </select>
                 </div>
+
+                <div>
+                    <label class="block text-xs text-slate-600 dark:text-slate-400 mb-1.5">정렬 기준</label>
+                    <select id="sort-type" onchange="applyFiltersAndSort()" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none cursor-pointer">
+                        <option value="score_asc" selected>점수 낮은 순 (기본)</option>
+                        <option value="score_desc">점수 높은 순</option>
+                        <option value="count_asc">재료 개수 순</option>
+                    </select>
+                </div>
             </div>
         </section>
 
-        <section class="flex-1 flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden min-w-0 transition-colors">
-            
+        <section class="flex-1 flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden min-w-0">
             <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
-                <div class="text-xs text-slate-600 dark:text-slate-400">
-                    검색 결과: <span id="filtered-count" class="text-emerald-600 dark:text-emerald-400 font-bold">0</span>개
-                </div>
-                
-                <div class="flex items-center gap-2">
-                    <button onclick="changePage(-1)" id="btn-prev" class="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 disabled:opacity-30 text-slate-700 dark:text-slate-200 px-2.5 py-1 rounded-md text-xs transition">◀</button>
-                    <div class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-300 px-1">
-                        <input type="number" id="page-input-top" onchange="goToPage(this.value)" class="w-10 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded py-1 text-center text-emerald-600 dark:text-emerald-400 font-bold focus:outline-none focus:border-emerald-500 transition">
-                        <span>/ <span id="total-pages-top">1</span></span>
-                    </div>
-                    <button onclick="changePage(1)" id="btn-next" class="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 disabled:opacity-30 text-slate-700 dark:text-slate-200 px-2.5 py-1 rounded-md text-xs transition">▶</button>
+                <span class="text-xs">결과: <b id="filtered-count" class="text-emerald-500 font-bold">0</b>개</span>
+                <div class="flex gap-2 items-center">
+                    <button onclick="changePage(-1)" class="px-2.5 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-xs transition hover:bg-slate-100">◀</button>
+                    <input type="number" id="page-input" onchange="goToPage(this.value)" class="w-12 bg-transparent text-center text-xs font-bold text-emerald-600 dark:text-emerald-400 focus:outline-none border-b border-slate-300 dark:border-slate-700">
+                    <button onclick="changePage(1)" class="px-2.5 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded text-xs transition hover:bg-slate-100">▶</button>
                 </div>
             </div>
-
+            
             <div class="flex-1 overflow-x-auto">
-                <table class="w-full text-left border-collapse min-w-[600px]">
-                    <thead>
-                        <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400 text-xs">
-                            <th class="py-3 px-4 font-semibold text-center w-16">완료</th>
-                            <th class="py-3 px-4 font-semibold text-center w-16">개수</th>
-                            <th class="py-3 px-4 font-semibold">조합 구성품</th>
-                            <th class="py-3 px-4 font-semibold text-center w-48">결과 기록</th>
-                            <th class="py-3 px-4 font-semibold text-center w-20">수정자</th>
+                <table class="w-full text-left text-xs min-w-[750px]">
+                    <thead class="bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400">
+                        <tr>
+                            <th class="py-3 px-4 text-center w-16">완료</th>
+                            <th class="py-3 px-4 text-center w-16">개수</th>
+                            <th class="py-3 px-4">조합 구성품</th>
+                            <th class="py-3 px-4 text-center w-56">결과 기록</th>
+                            <th class="py-3 px-4 text-center w-24">수정자</th>
                         </tr>
                     </thead>
-                    <tbody id="combination-tbody" class="text-xs divide-y divide-slate-100 dark:divide-slate-800/60">
-                        <tr><td colspan="5" class="p-8 text-center text-slate-500">데이터를 불러오는 중입니다...</td></tr>
-                    </tbody>
+                    <tbody id="combination-tbody" class="divide-y divide-slate-100 dark:divide-slate-800/60"></tbody>
                 </table>
             </div>
         </section>
@@ -162,6 +124,7 @@
             { name: '녹태', group: 'A' }, { name: '민들레', group: 'A' }, { name: '생강', group: 'A' }, { name: '영군버섯', group: 'A' }, { name: '옥취엽', group: 'A' }
         ];
 
+        const groupScores = { 'S': 4, 'A': 3, 'B': 2, 'C': 1 }; 
         const groupStyles = {
             'A': 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800/60',
             'B': 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-800/60',
@@ -169,13 +132,9 @@
             'S': 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800/60'
         };
 
-        let allCombinations = [];
-        let filteredCombinations = [];
-        let selectedHerbs = new Set();
-        let currentPage = 1;
-        const itemsPerPage = 100;
-
-        // 닉네임 및 관리자 설정
+        let allCombinations = [], filtered = [], selected = new Set(), currentPage = 1;
+        
+        // 🌟 닉네임 및 권한 체크 로직 강화
         let userNickname = localStorage.getItem("user_nickname");
         if (!userNickname) {
             userNickname = prompt("도감 기여에 사용할 닉네임을 설정해주세요:");
@@ -183,13 +142,179 @@
             userNickname = userNickname.trim();
             localStorage.setItem("user_nickname", userNickname);
         }
-        let adminToken = localStorage.getItem("admin_token") || "";
-        const isAdmin = adminToken === "hanwol123";
+        
+        const isAdmin = localStorage.getItem("admin_token") === "hanwol123";
 
-        document.getElementById("user-greeting").innerHTML = isAdmin 
-            ? `<b>${userNickname}</b>님 <span class="text-emerald-500 font-bold">(관리자)</span>` 
-            : `<b>${userNickname}</b>님, 환영합니다.`;
-        if (isAdmin) document.getElementById("admin-btn").style.display = "none";
+        // 초기 로드
+        window.onload = () => {
+            renderAuthUI();
+            renderHerbUI();
+            fetchData();
+        };
+
+        // 🌟 로그인/로그아웃 상태에 따른 UI 변경
+        function renderAuthUI() {
+            if (isAdmin) {
+                document.getElementById("user-greeting").innerHTML = `<b>${userNickname}</b>님 <span class="text-emerald-500 font-bold">(관리자)</span>`;
+                document.getElementById("admin-btn").style.display = "none";
+                document.getElementById("logout-btn").style.display = "block";
+            } else {
+                document.getElementById("user-greeting").innerHTML = `<b>${userNickname}</b>님, 환영합니다.`;
+                document.getElementById("admin-btn").style.display = "block";
+                document.getElementById("logout-btn").style.display = "none";
+            }
+        }
+
+        function renderHerbUI() {
+            const cont = document.getElementById('herb-container');
+            cont.innerHTML = '';
+            ['S','A','B','C'].forEach(g => {
+                cont.innerHTML += `<div class="mb-3"><div class="text-[11px] font-bold opacity-60 mb-1.5 tracking-wider">${g} 그룹 (+${groupScores[g]})</div><div id="group-${g}" class="flex flex-wrap gap-1.5"></div></div>`;
+                herbs.filter(h => h.group === g).forEach(h => {
+                    document.getElementById(`group-${g}`).innerHTML += `<button id="btn-${h.name}" onclick="toggleHerb('${h.name}')" class="border px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-950/40 dark:text-slate-400 dark:border-slate-800 transition">${h.name}</button>`;
+                });
+            });
+        }
+
+        async function fetchData() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/combinations`);
+                allCombinations = (await res.json()).map(c => {
+                    const parsed = Array.isArray(c.herbs) ? c.herbs.map(h => typeof h === 'object' ? Object.values(h)[0] : h) : String(c.herbs).split(',');
+                    let totalScore = 0;
+                    parsed.forEach(hName => {
+                        const hObj = herbs.find(x => x.name === hName.trim());
+                        if(hObj) totalScore += groupScores[hObj.group];
+                    });
+                    return { ...c, parsed, totalScore };
+                });
+                updateProgressBar();
+                applyFiltersAndSort();
+            } catch (e) {
+                document.getElementById('combination-tbody').innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500">데이터를 불러오는 데 실패했습니다.</td></tr>`;
+            }
+        }
+
+        function toggleHerb(name) {
+            if (selected.has(name)) selected.delete(name); else selected.add(name);
+            document.getElementById(`btn-${name}`).className = selected.has(name) 
+                ? "border px-2.5 py-1.5 rounded-lg text-xs font-bold bg-blue-500 text-white border-blue-600 dark:bg-blue-600 dark:border-blue-500 transition" 
+                : "border px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-950/40 dark:text-slate-400 dark:border-slate-800 transition";
+            applyFiltersAndSort();
+        }
+
+        // 🌟 모든 필터(개수, 상태, 정렬) 동시 적용
+        function applyFiltersAndSort() {
+            const filterCount = document.getElementById('filter-count').value;
+            const filterStatus = document.getElementById('filter-status').value;
+            const sortType = document.getElementById('sort-type').value;
+
+            filtered = allCombinations.filter(c => {
+                // 1. 개수 필터
+                if (filterCount !== 'all' && c.count.toString() !== filterCount) return false;
+                // 2. 상태 필터
+                if (filterStatus === 'checked' && !c.is_checked) return false;
+                if (filterStatus === 'unchecked' && c.is_checked) return false;
+                // 3. 약초 포함 필터
+                if (selected.size > 0 && !Array.from(selected).every(s => c.parsed.includes(s))) return false;
+                
+                return true;
+            });
+            
+            // 정렬 로직 (점수 또는 개수 -> 같으면 가나다순)
+            filtered.sort((a, b) => {
+                let diff = 0;
+                if (sortType === 'score_asc') diff = a.totalScore - b.totalScore;
+                else if (sortType === 'score_desc') diff = b.totalScore - a.totalScore;
+                else if (sortType === 'count_asc') diff = a.count - b.count;
+
+                if (diff === 0) return a.parsed.join('').localeCompare(b.parsed.join(''));
+                return diff;
+            });
+
+            currentPage = 1;
+            render();
+        }
+
+        function render() {
+            document.getElementById('filtered-count').innerText = filtered.length.toLocaleString();
+            document.getElementById('page-input').value = currentPage;
+            
+            const tbody = document.getElementById('combination-tbody');
+            tbody.innerHTML = '';
+            
+            const pageData = filtered.slice((currentPage-1)*100, currentPage*100);
+            if(pageData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-500">조건에 맞는 데이터가 없습니다.</td></tr>`;
+                return;
+            }
+
+            pageData.forEach(c => {
+                const canEdit = isAdmin || !c.is_checked || c.last_modified_by === userNickname;
+                
+                let herbBadgesHTML = c.parsed.map(hName => {
+                    const hObj = herbs.find(x => x.name === hName.trim());
+                    const style = hObj ? groupStyles[hObj.group] : 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300';
+                    const score = hObj ? groupScores[hObj.group] : 0;
+                    return `<span class="inline-block px-1.5 py-0.5 rounded text-[11px] font-medium border ${style}">${hName} (+${score})</span>`;
+                }).join('<span class="text-slate-400 dark:text-slate-600 text-[10px] mx-1">+</span>');
+
+                tbody.innerHTML += `<tr class="${c.is_checked ? 'bg-emerald-50/50 dark:bg-emerald-950/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800/30'}">
+                    <td class="py-3 px-4 text-center border-r border-slate-100 dark:border-slate-800/50">
+                        <input type="checkbox" ${c.is_checked?'checked':''} ${canEdit?'':'disabled'} onclick="save('${c.id}')" id="check-${c.id}" class="w-4 h-4 accent-emerald-500 cursor-pointer disabled:opacity-50">
+                    </td>
+                    <td class="py-3 px-4 text-center text-slate-500">${c.count}개</td>
+                    <td class="py-3 px-4 font-normal flex flex-wrap items-center gap-y-1">${herbBadgesHTML}</td>
+                    <td class="py-3 px-4">
+                        <div class="flex gap-2">
+                            <input type="text" value="${c.result_text||''}" id="res-${c.id}" ${canEdit?'':'disabled'} placeholder="결과 입력" class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded px-2 py-1.5 focus:outline-none focus:border-emerald-500 disabled:opacity-50 disabled:bg-slate-100 dark:disabled:bg-slate-900 transition-colors text-xs">
+                            ${isAdmin ? `<button onclick="save('${c.id}', true)" class="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs transition whitespace-nowrap">저장</button>` : ''}
+                        </div>
+                    </td>
+                    <td class="py-3 px-4 text-center text-[11px] text-slate-400 font-medium">${c.last_modified_by||'-'}</td>
+                </tr>`;
+            });
+        }
+
+        async function save(id, force = false) {
+            const isChecked = document.getElementById('check-'+id).checked;
+            const text = document.getElementById('res-'+id).value;
+            
+            if (isChecked && !isAdmin && text.trim() === "") {
+                alert("결과를 먼저 입력해주세요!");
+                document.getElementById('check-'+id).checked = false;
+                return;
+            }
+
+            document.getElementById('check-'+id).disabled = true;
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/check`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ combo_id: id, is_checked: isChecked, nickname: userNickname, result_text: text, admin_token: localStorage.admin_token || "" })
+                });
+                
+                if((await res.json()).success) {
+                    if(force) alert("강제 저장되었습니다.");
+                    fetchData();
+                } else {
+                    document.getElementById('check-'+id).disabled = false;
+                }
+            } catch(e) {
+                alert("통신 오류가 발생했습니다.");
+                document.getElementById('check-'+id).disabled = false;
+            }
+        }
+
+        function updateProgressBar() {
+            const total = allCombinations.length;
+            const completed = allCombinations.filter(c => c.is_checked).length;
+            const pct = total ? ((completed / total) * 100).toFixed(2) : 0;
+            
+            document.getElementById('progress-text').innerText = `${completed.toLocaleString()} / ${total.toLocaleString()} (${pct}%)`;
+            document.getElementById('progress-bar').style.width = `${pct}%`;
+        }
 
         function loginAsAdmin() {
             const token = prompt("관리자 비밀번호를 입력하세요:");
@@ -199,235 +324,19 @@
             } else if (token !== null) alert("비밀번호가 일치하지 않습니다.");
         }
 
-        function toggleTheme() {
-            document.documentElement.classList.toggle('dark');
-            const isDark = document.documentElement.classList.contains('dark');
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
-            document.getElementById('theme-icon').innerText = isDark ? '🌞' : '🌙';
-        }
-
-        window.addEventListener('DOMContentLoaded', () => {
-            if (localStorage.theme === 'dark') {
-                document.documentElement.classList.add('dark');
-                document.getElementById('theme-icon').innerText = '🌞';
-            } else {
-                document.getElementById('theme-icon').innerText = '🌙';
-            }
-            renderHerbSelectionUI();
-            fetchCombinations();
-        });
-
-        function renderHerbSelectionUI() {
-            herbs.forEach(herb => {
-                const container = document.getElementById(`group-${herb.group}-container`);
-                const btn = document.createElement('button');
-                btn.id = `herb-btn-${herb.name}`;
-                btn.className = `border text-xs px-2.5 py-1.5 rounded-lg font-medium transition cursor-pointer flex items-center gap-1 bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-950/40 dark:text-slate-400 dark:border-slate-800`;
-                btn.innerText = herb.name;
-                btn.onclick = () => toggleHerbSelection(herb.name);
-                container.appendChild(btn);
-            });
-        }
-
-        function extractHerbsText(herbsData) {
-            if (Array.isArray(herbsData)) {
-                return herbsData.map(h => typeof h === 'object' && h !== null ? Object.values(h)[0] || '' : String(h));
-            }
-            return String(herbsData || '').split(',').map(s => s.trim());
-        }
-
-        async function fetchCombinations() {
-            try {
-                const response = await fetch(`${API_BASE_URL}/combinations`);
-                const rawData = await response.json();
-                
-                allCombinations = rawData.map(c => ({
-                    ...c,
-                    parsedHerbs: extractHerbsText(c.herbs)
-                }));
-                applyFiltersAndRender(true);
-            } catch (e) {
-                document.getElementById('combination-tbody').innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500">데이터 로드 실패</td></tr>`;
+        // 🌟 추가된 로그아웃 기능
+        function logoutAdmin() {
+            if (confirm("관리자 모드에서 로그아웃 하시겠습니까?")) {
+                localStorage.removeItem("admin_token");
+                location.reload();
             }
         }
 
-        function toggleHerbSelection(name) {
-            if (selectedHerbs.has(name)) selectedHerbs.delete(name);
-            else selectedHerbs.add(name);
-            updateHerbButtonStyles();
-            applyFiltersAndRender(true);
-        }
-
-        function resetHerbSelection() {
-            selectedHerbs.clear();
-            updateHerbButtonStyles();
-            applyFiltersAndRender(true);
-        }
-
-        function updateHerbButtonStyles() {
-            herbs.forEach(herb => {
-                const btn = document.getElementById(`herb-btn-${herb.name}`);
-                if (selectedHerbs.has(herb.name)) {
-                    btn.className = `border text-xs px-2.5 py-1.5 rounded-lg font-bold transition cursor-pointer flex items-center gap-1 bg-blue-500 text-white border-blue-600 dark:bg-blue-600 dark:border-blue-500`;
-                } else {
-                    btn.className = `border text-xs px-2.5 py-1.5 rounded-lg font-medium transition cursor-pointer flex items-center gap-1 bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-950/40 dark:text-slate-400 dark:border-slate-800`;
-                }
-            });
-        }
-
-        function filterChange() { applyFiltersAndRender(true); }
-
-        function applyFiltersAndRender(resetPage = false) {
-            const filterCount = document.getElementById('filter-count').value;
-            const filterStatus = document.getElementById('filter-status').value;
-
-            filteredCombinations = allCombinations.filter(item => {
-                if (filterCount !== 'all' && item.count.toString() !== filterCount) return false;
-                if (filterStatus === 'checked' && !item.is_checked) return false;
-                if (filterStatus === 'unchecked' && item.is_checked) return false;
-                if (selectedHerbs.size > 0 && !Array.from(selectedHerbs).every(sh => item.parsedHerbs.includes(sh))) return false;
-                return true;
-            });
-
-            document.getElementById('filtered-count').innerText = filteredCombinations.length.toLocaleString();
-            if (resetPage) currentPage = 1;
-            renderTable();
-        }
-
-        // 🌟 수정 권한 잠금 기능이 포함된 테이블 렌더링 함수
-        function renderTable() {
-            const tbody = document.getElementById('combination-tbody');
-            tbody.innerHTML = '';
-
-            const totalPages = Math.ceil(filteredCombinations.length / itemsPerPage) || 1;
-            if (currentPage > totalPages) currentPage = totalPages;
-
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const pageItems = filteredCombinations.slice(startIndex, startIndex + itemsPerPage);
-
-            if (pageItems.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-500">조건에 맞는 데이터가 없습니다.</td></tr>`;
-            } else {
-                pageItems.forEach((item) => {
-                    const tr = document.createElement('tr');
-                    tr.className = item.is_checked 
-                        ? "bg-emerald-50/50 dark:bg-emerald-950/10 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition" 
-                        : "hover:bg-slate-50 dark:hover:bg-slate-800/30 transition";
-
-                    let herbBadgesHTML = item.parsedHerbs.map(hName => {
-                        const hObj = herbs.find(x => x.name === hName);
-                        const style = hObj ? groupStyles[hObj.group] : 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300';
-                        return `<span class="inline-block px-1.5 py-0.5 rounded text-[11px] font-medium border ${style}">${hName}</span>`;
-                    }).join('<span class="text-slate-400 dark:text-slate-600 text-xs mx-1">+</span>');
-
-                    const modifier = item.last_modified_by || "-";
-                    const resultText = item.result_text || "";
-                    
-                    // 🌟 권한 체크 로직: 관리자이거나, 미체크 상태이거나, 내가 수정한 항목만 조작 가능
-                    const canEdit = isAdmin || !item.is_checked || modifier === userNickname;
-                    
-                    const disableAttr = canEdit ? "" : "disabled";
-                    const disableClass = canEdit ? "" : "opacity-50 cursor-not-allowed";
-
-                    tr.innerHTML = `
-                        <td class="py-3 px-4 text-center border-r border-slate-100 dark:border-slate-800/50">
-                            <input type="checkbox" id="check-${item.id}" ${item.is_checked ? 'checked' : ''} 
-                                ${disableAttr}
-                                onclick="saveRowData('${item.id}')"
-                                class="w-4 h-4 rounded text-emerald-500 bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-700 accent-emerald-500 ${disableClass} ${canEdit ? 'cursor-pointer' : ''}">
-                        </td>
-                        <td class="py-3 px-4 text-center text-slate-500 dark:text-slate-400 font-medium">${item.count}개</td>
-                        <td class="py-3 px-4 font-normal flex flex-wrap items-center gap-y-1">${herbBadgesHTML}</td>
-                        <td class="py-3 px-4">
-                            <div class="flex gap-2">
-                                <input type="text" id="res-${item.id}" value="${resultText}" placeholder="결과를 입력하고 체크하세요" ${disableAttr}
-                                    class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-emerald-500 disabled:opacity-50 disabled:bg-slate-100 dark:disabled:bg-slate-900 transition-colors ${disableClass}">
-                                ${isAdmin ? `<button onclick="saveRowData('${item.id}', true)" class="px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded transition-colors whitespace-nowrap">저장</button>` : ''}
-                            </div>
-                        </td>
-                        <td class="py-3 px-4 text-center font-medium text-[11px] text-slate-400 dark:text-slate-500">${modifier}</td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-            }
-
-            document.getElementById('page-input-top').value = currentPage;
-            document.getElementById('total-pages-top').innerText = totalPages;
-            document.getElementById('btn-prev').disabled = currentPage === 1;
-            document.getElementById('btn-next').disabled = currentPage === totalPages;
-            
-            updateProgressBar();
-        }
-
-        async function saveRowData(id, forceSave = false) {
-            const checkbox = document.getElementById(`check-${id}`);
-            const resultInput = document.getElementById(`res-${id}`);
-            
-            if (checkbox.checked && !isAdmin && resultInput.value.trim() === "") {
-                alert("결과를 먼저 입력하신 후 체크해 주세요!");
-                checkbox.checked = false;
-                resultInput.focus();
-                return;
-            }
-
-            checkbox.disabled = true;
-            if(!isAdmin) resultInput.disabled = true;
-
-            try {
-                const res = await fetch(`${API_BASE_URL}/check`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        combo_id: id, 
-                        is_checked: checkbox.checked, 
-                        nickname: userNickname, 
-                        admin_token: adminToken,
-                        result_text: resultInput.value.trim()
-                    })
-                });
-                const result = await res.json();
-                
-                if (result.success) {
-                    const found = allCombinations.find(c => c.id === id);
-                    if (found) {
-                        found.is_checked = checkbox.checked;
-                        found.last_modified_by = result.last_modified_by;
-                        found.result_text = resultInput.value.trim();
-                    }
-                    if(forceSave) alert("결과가 수정되었습니다.");
-                    applyFiltersAndRender(false);
-                } else {
-                    alert(result.message);
-                    checkbox.checked = !checkbox.checked;
-                }
-            } catch (e) {
-                alert("통신 오류가 발생했습니다.");
-                checkbox.checked = !checkbox.checked;
-            } finally {
-                // 수정 후 다시 그릴 때 권한에 맞게 알아서 풀리거나 잠기므로 여기서는 신경 안 써도 됨
-            }
-        }
-
-        function changePage(direction) {
-            currentPage += direction;
-            renderTable();
-        }
-
-        function goToPage(val) {
-            let p = parseInt(val);
-            if (isNaN(p) || p < 1) p = 1;
-            currentPage = p;
-            renderTable();
-        }
-
-        function updateProgressBar() {
-            const total = allCombinations.length;
-            const completed = allCombinations.filter(c => c.is_checked).length;
-            const pct = total ? ((completed / total) * 100).toFixed(1) : 0;
-            
-            document.getElementById('progress-text').innerText = `${completed.toLocaleString()} / ${total.toLocaleString()} (${pct}%)`;
-            document.getElementById('progress-bar').style.width = `${pct}%`;
-        }
+        function toggleTheme() { document.documentElement.classList.toggle('dark'); }
+        function resetHerbSelection() { selected.clear(); applyFiltersAndSort(); renderHerbUI(); }
+        function goToPage(p) { currentPage = parseInt(p) || 1; render(); }
+        function changePage(d) { currentPage = Math.max(1, currentPage + d); render(); }
+        async function showLogs() { const l = await (await fetch(`${API_BASE_URL}/logs`)).json(); alert("최근 수정 기록:\n" + l.map(x => `[${x.action}] ${x.nickname}: ${x.herbs.replace(/[{}"']/g, '').split(':')[1]}`).join('\n')); }
     </script>
 </body>
 </html>
