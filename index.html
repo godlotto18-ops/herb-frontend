@@ -155,7 +155,6 @@
     <script>
         const API_BASE_URL = "https://herb-tracker-api.onrender.com/api";
         
-        // 데이터 정의 (점수 제거)
         const herbs = [
             { name: '금향과', group: 'S' }, { name: '빙백설화', group: 'S' }, { name: '월계엽', group: 'S' }, { name: '철목영지', group: 'S' }, { name: '홍련업화', group: 'S' },
             { name: '권엽', group: 'C' }, { name: '금양광초', group: 'C' }, { name: '옥향초', group: 'C' }, { name: '인삼', group: 'C' },
@@ -176,7 +175,7 @@
         let currentPage = 1;
         const itemsPerPage = 100;
 
-        // 닉네임 및 관리자
+        // 닉네임 및 관리자 설정
         let userNickname = localStorage.getItem("user_nickname");
         if (!userNickname) {
             userNickname = prompt("도감 기여에 사용할 닉네임을 설정해주세요:");
@@ -200,7 +199,6 @@
             } else if (token !== null) alert("비밀번호가 일치하지 않습니다.");
         }
 
-        // 테마 토글 (라이트/다크)
         function toggleTheme() {
             document.documentElement.classList.toggle('dark');
             const isDark = document.documentElement.classList.contains('dark');
@@ -209,7 +207,6 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
-            // 초기 테마 설정
             if (localStorage.theme === 'dark') {
                 document.documentElement.classList.add('dark');
                 document.getElementById('theme-icon').innerText = '🌞';
@@ -220,7 +217,6 @@
             fetchCombinations();
         });
 
-        // 좌측 약초 버튼 렌더링
         function renderHerbSelectionUI() {
             herbs.forEach(herb => {
                 const container = document.getElementById(`group-${herb.group}-container`);
@@ -240,7 +236,6 @@
             return String(herbsData || '').split(',').map(s => s.trim());
         }
 
-        // 서버 데이터 불러오기
         async function fetchCombinations() {
             try {
                 const response = await fetch(`${API_BASE_URL}/combinations`);
@@ -256,7 +251,6 @@
             }
         }
 
-        // 필터 및 버튼 UI 로직
         function toggleHerbSelection(name) {
             if (selectedHerbs.has(name)) selectedHerbs.delete(name);
             else selectedHerbs.add(name);
@@ -300,7 +294,7 @@
             renderTable();
         }
 
-        // 테이블 렌더링
+        // 🌟 수정 권한 잠금 기능이 포함된 테이블 렌더링 함수
         function renderTable() {
             const tbody = document.getElementById('combination-tbody');
             tbody.innerHTML = '';
@@ -320,7 +314,6 @@
                         ? "bg-emerald-50/50 dark:bg-emerald-950/10 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition" 
                         : "hover:bg-slate-50 dark:hover:bg-slate-800/30 transition";
 
-                    // 약초 뱃지 생성
                     let herbBadgesHTML = item.parsedHerbs.map(hName => {
                         const hObj = herbs.find(x => x.name === hName);
                         const style = hObj ? groupStyles[hObj.group] : 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300';
@@ -330,21 +323,25 @@
                     const modifier = item.last_modified_by || "-";
                     const resultText = item.result_text || "";
                     
-                    // 일반 유저는 완료된 항목의 결과 수정 불가
-                    const disableInput = (!isAdmin && item.is_checked) ? "disabled" : "";
+                    // 🌟 권한 체크 로직: 관리자이거나, 미체크 상태이거나, 내가 수정한 항목만 조작 가능
+                    const canEdit = isAdmin || !item.is_checked || modifier === userNickname;
+                    
+                    const disableAttr = canEdit ? "" : "disabled";
+                    const disableClass = canEdit ? "" : "opacity-50 cursor-not-allowed";
 
                     tr.innerHTML = `
                         <td class="py-3 px-4 text-center border-r border-slate-100 dark:border-slate-800/50">
                             <input type="checkbox" id="check-${item.id}" ${item.is_checked ? 'checked' : ''} 
+                                ${disableAttr}
                                 onclick="saveRowData('${item.id}')"
-                                class="w-4 h-4 rounded text-emerald-500 bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-700 cursor-pointer accent-emerald-500">
+                                class="w-4 h-4 rounded text-emerald-500 bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-700 accent-emerald-500 ${disableClass} ${canEdit ? 'cursor-pointer' : ''}">
                         </td>
                         <td class="py-3 px-4 text-center text-slate-500 dark:text-slate-400 font-medium">${item.count}개</td>
                         <td class="py-3 px-4 font-normal flex flex-wrap items-center gap-y-1">${herbBadgesHTML}</td>
                         <td class="py-3 px-4">
                             <div class="flex gap-2">
-                                <input type="text" id="res-${item.id}" value="${resultText}" placeholder="결과를 입력하고 체크하세요" ${disableInput}
-                                    class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-emerald-500 disabled:opacity-50 disabled:bg-slate-100 dark:disabled:bg-slate-900 transition-colors">
+                                <input type="text" id="res-${item.id}" value="${resultText}" placeholder="결과를 입력하고 체크하세요" ${disableAttr}
+                                    class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-emerald-500 disabled:opacity-50 disabled:bg-slate-100 dark:disabled:bg-slate-900 transition-colors ${disableClass}">
                                 ${isAdmin ? `<button onclick="saveRowData('${item.id}', true)" class="px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded transition-colors whitespace-nowrap">저장</button>` : ''}
                             </div>
                         </td>
@@ -362,12 +359,10 @@
             updateProgressBar();
         }
 
-        // 데이터 저장 및 동기화 로직
         async function saveRowData(id, forceSave = false) {
             const checkbox = document.getElementById(`check-${id}`);
             const resultInput = document.getElementById(`res-${id}`);
             
-            // 일반 유저가 결과를 안 적고 체크하려 할 때 방어
             if (checkbox.checked && !isAdmin && resultInput.value.trim() === "") {
                 alert("결과를 먼저 입력하신 후 체크해 주세요!");
                 checkbox.checked = false;
@@ -400,7 +395,7 @@
                         found.result_text = resultInput.value.trim();
                     }
                     if(forceSave) alert("결과가 수정되었습니다.");
-                    applyFiltersAndRender(false); // 페이지 유지
+                    applyFiltersAndRender(false);
                 } else {
                     alert(result.message);
                     checkbox.checked = !checkbox.checked;
@@ -409,12 +404,10 @@
                 alert("통신 오류가 발생했습니다.");
                 checkbox.checked = !checkbox.checked;
             } finally {
-                checkbox.disabled = false;
-                if(!isAdmin && !checkbox.checked) resultInput.disabled = false;
+                // 수정 후 다시 그릴 때 권한에 맞게 알아서 풀리거나 잠기므로 여기서는 신경 안 써도 됨
             }
         }
 
-        // 페이지 조작 로직
         function changePage(direction) {
             currentPage += direction;
             renderTable();
