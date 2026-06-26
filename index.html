@@ -4,182 +4,179 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>약초 조합 도감</title>
-    
-    <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: {} }
+        }
+    </script>
     <style>
-        body { font-family: 'Pretendard', sans-serif !important; background-color: #0b1121 !important; color: #cbd5e1; margin: 0; height: 100vh; overflow: hidden; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+        body { font-family: 'Noto Sans KR', 'Inter', sans-serif; transition: background-color 0.3s, color 0.3s; }
         
-        /* 커스텀 스크롤바 */
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
-
-        /* 약초 버튼 트랜지션 */
-        .herb-btn { transition: all 0.2s ease; cursor: pointer; user-select: none; }
-        .herb-btn.active { opacity: 1; transform: translateY(-1px); box-shadow: 0 0 10px rgba(255,255,255,0.1); }
-        .herb-btn.inactive { opacity: 0.3; filter: grayscale(50%); }
-
-        /* 체크박스 커스텀 */
-        input[type="checkbox"] { width: 1.25rem; height: 1.25rem; accent-color: #3b82f6; cursor: pointer; }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
         
-        /* 테이블 헤더 고정 */
-        thead th { position: sticky; top: 0; background-color: #111827; z-index: 10; border-bottom: 1px solid #1e293b; }
-        
-        /* 입력창 숫자 화살표 제거 */
-        input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        /* Hide number input arrows */
+        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
     </style>
 </head>
-<body class="flex flex-col md:flex-row h-screen">
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col">
 
-    <aside class="w-full md:w-80 bg-[#111827] border-r border-[#1e293b] flex flex-col h-full flex-shrink-0">
-        <div class="p-5 flex-1 overflow-y-auto custom-scrollbar">
+    <header class="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/50 backdrop-blur sticky top-0 z-50 transition-colors">
+        <div class="max-w-5xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-4">
+                <div>
+                    <h1 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-500 flex items-center gap-2">
+                        🌿 약초 조합 도감
+                    </h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1" id="user-greeting">접속 중...</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="toggleTheme()" class="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg text-sm transition-colors" title="테마 변경">
+                        <span id="theme-icon">🌙</span>
+                    </button>
+                    <button onclick="loginAsAdmin()" id="admin-btn" class="px-3 py-1.5 bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900 rounded-lg text-xs font-bold transition-colors">
+                        🔒 관리자
+                    </button>
+                </div>
+            </div>
             
-            <div class="mb-6 pb-6 border-b border-[#1e293b]">
-                <div class="flex justify-between items-end mb-2">
-                    <h1 class="text-xl font-bold text-white">🌿 약초 도감</h1>
-                    <span id="progress-text" class="text-sm font-bold text-blue-400">0%</span>
+            <div class="bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 p-3 rounded-xl w-full sm:w-72 transition-colors">
+                <div class="flex justify-between text-xs font-semibold mb-1">
+                    <span class="text-slate-600 dark:text-slate-400">전체 탐색 진행도</span>
+                    <span id="progress-text" class="text-emerald-600 dark:text-emerald-400">0 / 0 (0.00%)</span>
                 </div>
-                <div class="w-full bg-[#0b1121] rounded-full h-2 overflow-hidden mb-1 border border-[#1e293b]">
-                    <div id="progress-bar" class="bg-blue-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
-                </div>
-                <p id="progress-detail" class="text-xs text-slate-500 text-right">0 / 0 완료</p>
-            </div>
-
-            <div class="mb-8">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="font-bold text-slate-200">🔍 포함할 약초 선택</h2>
-                    <button onclick="resetHerbs()" class="text-xs text-pink-500 hover:text-pink-400 font-medium">선택 초기화</button>
-                </div>
-                
-                <div class="space-y-4 text-sm" id="herb-filters-container">
-                    </div>
-            </div>
-
-            <div class="bg-[#0b1121] rounded-xl border border-[#1e293b] p-4">
-                <h2 class="font-bold text-slate-200 mb-4 flex items-center gap-2">⚙️ 상세 설정 및 필터</h2>
-                
-                <div class="space-y-4 text-sm">
-                    <div>
-                        <label class="block text-slate-400 mb-1">정렬 기준</label>
-                        <select id="sort-rule" onchange="applyFiltersAndRender()" class="w-full bg-[#111827] border border-[#1e293b] rounded p-2 text-slate-200 focus:outline-none focus:border-blue-500">
-                            <option value="default">기본 정렬</option>
-                            <option value="score-desc">점수 높은 순</option>
-                            <option value="score-asc">점수 낮은 순</option>
-                            <option value="count-desc">재료 많은 순</option>
-                        </select>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-slate-400 mb-1">개수 선택</label>
-                        <select id="filter-count" onchange="applyFiltersAndRender()" class="w-full bg-[#111827] border border-[#1e293b] rounded p-2 text-slate-200 focus:outline-none focus:border-blue-500">
-                            <option value="all">전체보기</option>
-                            <option value="3">3개</option>
-                            <option value="4">4개</option>
-                            <option value="5">5개</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-slate-400 mb-1">체크 상태</label>
-                        <select id="filter-status" onchange="applyFiltersAndRender()" class="w-full bg-[#111827] border border-[#1e293b] rounded p-2 text-slate-200 focus:outline-none focus:border-blue-500">
-                            <option value="all">모든 상태</option>
-                            <option value="checked">완료됨</option>
-                            <option value="unchecked">미완료</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-slate-400 mb-1">점수 범위 필터 (직접입력)</label>
-                        <div class="flex items-center gap-2">
-                            <input type="number" id="score-min" placeholder="최소" onchange="applyFiltersAndRender()" class="w-full bg-[#111827] border border-[#1e293b] rounded p-2 text-center text-slate-200 focus:outline-none focus:border-blue-500">
-                            <span class="text-slate-500">~</span>
-                            <input type="number" id="score-max" placeholder="최대" onchange="applyFiltersAndRender()" class="w-full bg-[#111827] border border-[#1e293b] rounded p-2 text-center text-slate-200 focus:outline-none focus:border-blue-500">
-                        </div>
-                    </div>
+                <div class="w-full bg-slate-300 dark:bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-300 dark:border-slate-800">
+                    <div id="progress-bar" class="bg-gradient-to-r from-emerald-500 to-teal-500 h-full w-0 transition-all duration-300"></div>
                 </div>
             </div>
         </div>
+    </header>
 
-        <div class="p-4 bg-[#0b1121] border-t border-[#1e293b] text-xs">
-            <p id="user-greeting" class="text-slate-400 mb-2 truncate">접속 중...</p>
-            <button onclick="loginAsAdmin()" id="admin-btn" class="w-full py-2 bg-[#1e293b] hover:bg-slate-700 text-slate-300 rounded font-medium transition-colors border border-slate-700">
-                🔒 관리자 로그인
-            </button>
-        </div>
-    </aside>
-
-    <main class="flex-1 flex flex-col h-full bg-[#0b1121] overflow-hidden p-6 relative">
+    <main class="flex-1 max-w-5xl w-full mx-auto px-4 py-6 flex flex-col md:flex-row gap-6">
         
-        <div class="flex justify-between items-center mb-4 bg-[#111827] p-3 rounded-lg border border-[#1e293b]">
-            <div class="text-sm text-slate-400">
-                검색 결과: <span id="result-count" class="text-emerald-400 font-bold">0</span>개 항목 발견
-            </div>
+        <section class="w-full md:w-64 flex flex-col gap-6 shrink-0">
             
-            <div class="flex items-center gap-3 text-sm">
-                <button id="prev-btn" onclick="changePage(-1)" class="px-3 py-1 bg-[#1e293b] hover:bg-slate-700 text-slate-300 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed border border-[#334155]">◀ 이전</button>
-                <div class="flex items-center gap-1 font-mono text-slate-300">
-                    <input type="number" id="page-input" min="1" class="w-12 bg-transparent text-center border-b border-slate-600 focus:outline-none focus:border-blue-400 text-white font-bold" onchange="jumpToPage()" onkeyup="if(event.key === 'Enter') jumpToPage()">
-                    <span id="total-pages" class="text-slate-500">/ 1</span>
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 transition-colors">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="font-bold text-sm text-slate-800 dark:text-slate-300 flex items-center gap-1.5">
+                        🔍 포함할 약초
+                    </h2>
+                    <button onclick="resetHerbSelection()" class="text-xs text-rose-500 dark:text-rose-400 hover:underline">초기화</button>
                 </div>
-                <button id="next-btn" onclick="changePage(1)" class="px-3 py-1 bg-[#1e293b] hover:bg-slate-700 text-slate-300 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed border border-[#334155]">다음 ▶</button>
+                
+                <div class="space-y-4">
+                    <div>
+                        <div class="text-[11px] font-bold text-amber-600 dark:text-amber-400 mb-1.5 tracking-wider">S 그룹</div>
+                        <div class="flex flex-wrap gap-1.5" id="group-S-container"></div>
+                    </div>
+                    <div>
+                        <div class="text-[11px] font-bold text-purple-600 dark:text-purple-400 mb-1.5 tracking-wider">C 그룹</div>
+                        <div class="flex flex-wrap gap-1.5" id="group-C-container"></div>
+                    </div>
+                    <div>
+                        <div class="text-[11px] font-bold text-blue-600 dark:text-blue-400 mb-1.5 tracking-wider">B 그룹</div>
+                        <div class="flex flex-wrap gap-1.5" id="group-B-container"></div>
+                    </div>
+                    <div>
+                        <div class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mb-1.5 tracking-wider">A 그룹</div>
+                        <div class="flex flex-wrap gap-1.5" id="group-A-container"></div>
+                    </div>
+                </div>
             </div>
-        </div>
 
-        <div class="flex-1 overflow-y-auto custom-scrollbar bg-[#0b1121] rounded-lg border border-[#1e293b]">
-            <table class="w-full text-left border-collapse text-sm">
-                <thead>
-                    <tr class="text-slate-400">
-                        <th class="p-4 w-16 text-center font-medium">완료</th>
-                        <th class="p-4 w-20 text-center font-medium">재료 수</th>
-                        <th class="p-4 font-medium">약초 조합 구성품</th>
-                        <th class="p-4 w-24 text-center font-medium">점수 총합</th>
-                        <th class="p-4 w-28 text-center font-medium">수정자</th>
-                    </tr>
-                </thead>
-                <tbody id="table-body" class="divide-y divide-[#1e293b]">
-                    <tr><td colspan="5" class="p-10 text-center text-slate-500">데이터를 불러오는 중입니다...</td></tr>
-                </tbody>
-            </table>
-        </div>
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-4 transition-colors">
+                <h2 class="font-bold text-sm text-slate-800 dark:text-slate-300">⚙️ 필터</h2>
+                
+                <div>
+                    <label class="block text-xs text-slate-600 dark:text-slate-400 mb-1.5">개수 선택</label>
+                    <select id="filter-count" onchange="filterChange()" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:border-emerald-500 cursor-pointer">
+                        <option value="all">전체보기</option>
+                        <option value="3">3개 조합만</option>
+                        <option value="4">4개 조합만</option>
+                        <option value="5">5개 조합만</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs text-slate-600 dark:text-slate-400 mb-1.5">체크 상태</label>
+                    <select id="filter-status" onchange="filterChange()" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:border-emerald-500 cursor-pointer">
+                        <option value="all">모든 상태</option>
+                        <option value="unchecked">미시도 조합만</option>
+                        <option value="checked">시도 완료 조합만</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <section class="flex-1 flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden min-w-0 transition-colors">
+            
+            <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
+                <div class="text-xs text-slate-600 dark:text-slate-400">
+                    검색 결과: <span id="filtered-count" class="text-emerald-600 dark:text-emerald-400 font-bold">0</span>개
+                </div>
+                
+                <div class="flex items-center gap-2">
+                    <button onclick="changePage(-1)" id="btn-prev" class="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 disabled:opacity-30 text-slate-700 dark:text-slate-200 px-2.5 py-1 rounded-md text-xs transition">◀</button>
+                    <div class="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-300 px-1">
+                        <input type="number" id="page-input-top" onchange="goToPage(this.value)" class="w-10 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded py-1 text-center text-emerald-600 dark:text-emerald-400 font-bold focus:outline-none focus:border-emerald-500 transition">
+                        <span>/ <span id="total-pages-top">1</span></span>
+                    </div>
+                    <button onclick="changePage(1)" id="btn-next" class="bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 disabled:opacity-30 text-slate-700 dark:text-slate-200 px-2.5 py-1 rounded-md text-xs transition">▶</button>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-x-auto">
+                <table class="w-full text-left border-collapse min-w-[600px]">
+                    <thead>
+                        <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400 text-xs">
+                            <th class="py-3 px-4 font-semibold text-center w-16">완료</th>
+                            <th class="py-3 px-4 font-semibold text-center w-16">개수</th>
+                            <th class="py-3 px-4 font-semibold">조합 구성품</th>
+                            <th class="py-3 px-4 font-semibold text-center w-48">결과 기록</th>
+                            <th class="py-3 px-4 font-semibold text-center w-20">수정자</th>
+                        </tr>
+                    </thead>
+                    <tbody id="combination-tbody" class="text-xs divide-y divide-slate-100 dark:divide-slate-800/60">
+                        <tr><td colspan="5" class="p-8 text-center text-slate-500">데이터를 불러오는 중입니다...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
     </main>
 
     <script>
         const API_BASE_URL = "https://herb-tracker-api.onrender.com/api";
         
-        // 🌟 1. 약초별 그룹, 점수, 색상 데이터 정의
-        const HERB_DATA = {
-            '금향과': {group: 'S', score: 4, color: 'text-orange-400 border-orange-500/40 bg-orange-500/10'},
-            '빙백설화': {group: 'S', score: 4, color: 'text-orange-400 border-orange-500/40 bg-orange-500/10'},
-            '월계엽': {group: 'S', score: 4, color: 'text-orange-400 border-orange-500/40 bg-orange-500/10'},
-            '철목영지': {group: 'S', score: 4, color: 'text-orange-400 border-orange-500/40 bg-orange-500/10'},
-            '홍련업화': {group: 'S', score: 4, color: 'text-orange-400 border-orange-500/40 bg-orange-500/10'},
-            '권엽': {group: 'C', score: 3, color: 'text-purple-400 border-purple-500/40 bg-purple-500/10'},
-            '금양광초': {group: 'C', score: 3, color: 'text-purple-400 border-purple-500/40 bg-purple-500/10'},
-            '옥향초': {group: 'C', score: 3, color: 'text-purple-400 border-purple-500/40 bg-purple-500/10'},
-            '인삼': {group: 'C', score: 3, color: 'text-purple-400 border-purple-500/40 bg-purple-500/10'},
-            '백향초': {group: 'B', score: 2, color: 'text-blue-400 border-blue-500/40 bg-blue-500/10'},
-            '자운초': {group: 'B', score: 2, color: 'text-blue-400 border-blue-500/40 bg-blue-500/10'},
-            '적주과': {group: 'B', score: 2, color: 'text-blue-400 border-blue-500/40 bg-blue-500/10'},
-            '황초': {group: 'B', score: 2, color: 'text-blue-400 border-blue-500/40 bg-blue-500/10'},
-            '흑성과': {group: 'B', score: 2, color: 'text-blue-400 border-blue-500/40 bg-blue-500/10'},
-            '녹태': {group: 'A', score: 1, color: 'text-emerald-400 border-emerald-500/40 bg-emerald-500/10'},
-            '민들레': {group: 'A', score: 1, color: 'text-emerald-400 border-emerald-500/40 bg-emerald-500/10'},
-            '생강': {group: 'A', score: 1, color: 'text-emerald-400 border-emerald-500/40 bg-emerald-500/10'},
-            '영군버섯': {group: 'A', score: 1, color: 'text-emerald-400 border-emerald-500/40 bg-emerald-500/10'},
-            '육취엽': {group: 'A', score: 1, color: 'text-emerald-400 border-emerald-500/40 bg-emerald-500/10'},
+        // 데이터 정의 (점수 제거)
+        const herbs = [
+            { name: '금향과', group: 'S' }, { name: '빙백설화', group: 'S' }, { name: '월계엽', group: 'S' }, { name: '철목영지', group: 'S' }, { name: '홍련업화', group: 'S' },
+            { name: '권엽', group: 'C' }, { name: '금양광초', group: 'C' }, { name: '옥향초', group: 'C' }, { name: '인삼', group: 'C' },
+            { name: '백향초', group: 'B' }, { name: '자운초', group: 'B' }, { name: '적주과', group: 'B' }, { name: '황초', group: 'B' }, { name: '흑성과', group: 'B' },
+            { name: '녹태', group: 'A' }, { name: '민들레', group: 'A' }, { name: '생강', group: 'A' }, { name: '영군버섯', group: 'A' }, { name: '옥취엽', group: 'A' }
+        ];
+
+        const groupStyles = {
+            'A': 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800/60',
+            'B': 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-800/60',
+            'C': 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-400 dark:border-purple-800/60',
+            'S': 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800/60'
         };
 
-        // 전역 상태 변수
         let allCombinations = [];
-        let currentFilteredData = [];
+        let filteredCombinations = [];
         let selectedHerbs = new Set();
-        const itemsPerPage = 100;
         let currentPage = 1;
+        const itemsPerPage = 100;
 
-        // 2. 닉네임 및 로그인 시스템
+        // 닉네임 및 관리자
         let userNickname = localStorage.getItem("user_nickname");
         if (!userNickname) {
             userNickname = prompt("도감 기여에 사용할 닉네임을 설정해주세요:");
@@ -187,17 +184,13 @@
             userNickname = userNickname.trim();
             localStorage.setItem("user_nickname", userNickname);
         }
-
         let adminToken = localStorage.getItem("admin_token") || "";
-        const greetingEl = document.getElementById("user-greeting");
-        const adminBtn = document.getElementById("admin-btn");
-        
-        if (adminToken === "hanwol123") {
-            greetingEl.innerHTML = `반갑습니다, <span class="text-white font-bold">${userNickname}</span>님 <span class="text-emerald-500">(관리자)</span>`;
-            adminBtn.style.display = "none";
-        } else {
-            greetingEl.innerHTML = `<span class="text-white font-bold">${userNickname}</span>님, 환영합니다.`;
-        }
+        const isAdmin = adminToken === "hanwol123";
+
+        document.getElementById("user-greeting").innerHTML = isAdmin 
+            ? `<b>${userNickname}</b>님 <span class="text-emerald-500 font-bold">(관리자)</span>` 
+            : `<b>${userNickname}</b>님, 환영합니다.`;
+        if (isAdmin) document.getElementById("admin-btn").style.display = "none";
 
         function loginAsAdmin() {
             const token = prompt("관리자 비밀번호를 입력하세요:");
@@ -207,228 +200,241 @@
             } else if (token !== null) alert("비밀번호가 일치하지 않습니다.");
         }
 
-        // 3. 약초 필터 버튼 UI 렌더링
-        function renderHerbFilters() {
-            const container = document.getElementById('herb-filters-container');
-            const groups = { 'S': [], 'C': [], 'B': [], 'A': [] };
-            
-            Object.keys(HERB_DATA).forEach(herb => groups[HERB_DATA[herb].group].push(herb));
-
-            let html = '';
-            const groupTitles = { 'S': 'S 그룹 (+4)', 'C': 'C 그룹 (+3)', 'B': 'B 그룹 (+2)', 'A': 'A 그룹 (+1)' };
-            const groupColors = { 'S': 'text-orange-400', 'C': 'text-purple-400', 'B': 'text-blue-400', 'A': 'text-emerald-400' };
-
-            ['S', 'C', 'B', 'A'].forEach(g => {
-                html += `<div><h3 class="mb-2 font-medium ${groupColors[g]}">${groupTitles[g]}</h3><div class="flex flex-wrap gap-2">`;
-                groups[g].forEach(herb => {
-                    const colorClasses = HERB_DATA[herb].color;
-                    html += `<button onclick="toggleHerbFilter('${herb}')" id="btn-${herb}" class="herb-btn inactive px-3 py-1 rounded-md border ${colorClasses}">${herb}</button>`;
-                });
-                html += `</div></div>`;
-            });
-            container.innerHTML = html;
+        // 테마 토글 (라이트/다크)
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            const isDark = document.documentElement.classList.contains('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            document.getElementById('theme-icon').innerText = isDark ? '🌞' : '🌙';
         }
 
-        function toggleHerbFilter(herb) {
-            if (selectedHerbs.has(herb)) selectedHerbs.delete(herb);
-            else selectedHerbs.add(herb);
-            updateHerbButtonsUI();
-            applyFiltersAndRender(true);
-        }
+        window.addEventListener('DOMContentLoaded', () => {
+            // 초기 테마 설정
+            if (localStorage.theme === 'dark') {
+                document.documentElement.classList.add('dark');
+                document.getElementById('theme-icon').innerText = '🌞';
+            } else {
+                document.getElementById('theme-icon').innerText = '🌙';
+            }
+            renderHerbSelectionUI();
+            fetchCombinations();
+        });
 
-        function resetHerbs() {
-            selectedHerbs.clear();
-            updateHerbButtonsUI();
-            applyFiltersAndRender(true);
-        }
-
-        function updateHerbButtonsUI() {
-            Object.keys(HERB_DATA).forEach(herb => {
-                const btn = document.getElementById(`btn-${herb}`);
-                if (btn) {
-                    if (selectedHerbs.has(herb)) {
-                        btn.classList.remove('inactive');
-                        btn.classList.add('active');
-                    } else {
-                        btn.classList.remove('active');
-                        btn.classList.add('inactive');
-                    }
-                }
+        // 좌측 약초 버튼 렌더링
+        function renderHerbSelectionUI() {
+            herbs.forEach(herb => {
+                const container = document.getElementById(`group-${herb.group}-container`);
+                const btn = document.createElement('button');
+                btn.id = `herb-btn-${herb.name}`;
+                btn.className = `border text-xs px-2.5 py-1.5 rounded-lg font-medium transition cursor-pointer flex items-center gap-1 bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-950/40 dark:text-slate-400 dark:border-slate-800`;
+                btn.innerText = herb.name;
+                btn.onclick = () => toggleHerbSelection(herb.name);
+                container.appendChild(btn);
             });
         }
 
-        // 4. 데이터 페치 및 전처리
         function extractHerbsText(herbsData) {
             if (Array.isArray(herbsData)) {
-                return herbsData.map(h => {
-                    if (typeof h === 'object' && h !== null) return Object.values(h)[0] || '';
-                    return String(h);
-                });
+                return herbsData.map(h => typeof h === 'object' && h !== null ? Object.values(h)[0] || '' : String(h));
             }
             return String(herbsData || '').split(',').map(s => s.trim());
         }
 
+        // 서버 데이터 불러오기
         async function fetchCombinations() {
             try {
                 const response = await fetch(`${API_BASE_URL}/combinations`);
                 const rawData = await response.json();
                 
-                // 데이터 받아오면서 파싱 및 점수 계산 미리 해두기
-                allCombinations = rawData.map(c => {
-                    const parsedHerbs = extractHerbsText(c.herbs);
-                    let score = 0;
-                    parsedHerbs.forEach(h => { if (HERB_DATA[h]) score += HERB_DATA[h].score; });
-                    return { ...c, parsedHerbs, totalScore: score };
-                });
-                
+                allCombinations = rawData.map(c => ({
+                    ...c,
+                    parsedHerbs: extractHerbsText(c.herbs)
+                }));
                 applyFiltersAndRender(true);
             } catch (e) {
-                document.getElementById('table-body').innerHTML = `<tr><td colspan="5" class="p-10 text-center text-red-500">데이터를 불러오지 못했습니다.</td></tr>`;
+                document.getElementById('combination-tbody').innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500">데이터 로드 실패</td></tr>`;
             }
         }
 
-        // 5. 필터 및 정렬 적용
-        function applyFiltersAndRender(resetPage = true) {
-            const countVal = document.getElementById('filter-count').value;
-            const statusVal = document.getElementById('filter-status').value;
-            const minS = parseInt(document.getElementById('score-min').value) || 0;
-            const maxS = parseInt(document.getElementById('score-max').value) || 999;
-            const sortRule = document.getElementById('sort-rule').value;
+        // 필터 및 버튼 UI 로직
+        function toggleHerbSelection(name) {
+            if (selectedHerbs.has(name)) selectedHerbs.delete(name);
+            else selectedHerbs.add(name);
+            updateHerbButtonStyles();
+            applyFiltersAndRender(true);
+        }
 
-            let filtered = allCombinations.filter(c => {
-                // 선택한 약초가 '모두' 포함되어야 함 (AND 검색)
-                if (selectedHerbs.size > 0) {
-                    const hasAll = Array.from(selectedHerbs).every(sh => c.parsedHerbs.includes(sh));
-                    if (!hasAll) return false;
+        function resetHerbSelection() {
+            selectedHerbs.clear();
+            updateHerbButtonStyles();
+            applyFiltersAndRender(true);
+        }
+
+        function updateHerbButtonStyles() {
+            herbs.forEach(herb => {
+                const btn = document.getElementById(`herb-btn-${herb.name}`);
+                if (selectedHerbs.has(herb.name)) {
+                    btn.className = `border text-xs px-2.5 py-1.5 rounded-lg font-bold transition cursor-pointer flex items-center gap-1 bg-blue-500 text-white border-blue-600 dark:bg-blue-600 dark:border-blue-500`;
+                } else {
+                    btn.className = `border text-xs px-2.5 py-1.5 rounded-lg font-medium transition cursor-pointer flex items-center gap-1 bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-950/40 dark:text-slate-400 dark:border-slate-800`;
                 }
-                
-                if (countVal !== 'all' && c.count.toString() !== countVal) return false;
-                if (statusVal === 'checked' && !c.is_checked) return false;
-                if (statusVal === 'unchecked' && c.is_checked) return false;
-                if (c.totalScore < minS || c.totalScore > maxS) return false;
-                
+            });
+        }
+
+        function filterChange() { applyFiltersAndRender(true); }
+
+        function applyFiltersAndRender(resetPage = false) {
+            const filterCount = document.getElementById('filter-count').value;
+            const filterStatus = document.getElementById('filter-status').value;
+
+            filteredCombinations = allCombinations.filter(item => {
+                if (filterCount !== 'all' && item.count.toString() !== filterCount) return false;
+                if (filterStatus === 'checked' && !item.is_checked) return false;
+                if (filterStatus === 'unchecked' && item.is_checked) return false;
+                if (selectedHerbs.size > 0 && !Array.from(selectedHerbs).every(sh => item.parsedHerbs.includes(sh))) return false;
                 return true;
             });
 
-            // 정렬
-            if (sortRule === 'score-desc') filtered.sort((a,b) => b.totalScore - a.totalScore);
-            else if (sortRule === 'score-asc') filtered.sort((a,b) => a.totalScore - b.totalScore);
-            else if (sortRule === 'count-desc') filtered.sort((a,b) => b.count - a.count);
-
-            currentFilteredData = filtered;
-            document.getElementById('result-count').textContent = filtered.length.toLocaleString();
-
+            document.getElementById('filtered-count').innerText = filteredCombinations.length.toLocaleString();
             if (resetPage) currentPage = 1;
-            renderTableWithPagination();
+            renderTable();
         }
 
-        // 6. 테이블 및 페이지네이션 렌더링
-        function renderTableWithPagination() {
-            const totalPages = Math.ceil(currentFilteredData.length / itemsPerPage) || 1;
-            if (currentPage < 1) currentPage = 1;
-            if (currentPage > totalPages) currentPage = totalPages;
-
-            document.getElementById('page-input').value = currentPage;
-            document.getElementById('total-pages').textContent = `/ ${totalPages}`;
-            document.getElementById('prev-btn').disabled = currentPage === 1;
-            document.getElementById('next-btn').disabled = currentPage === totalPages;
-
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const pageData = currentFilteredData.slice(startIndex, startIndex + itemsPerPage);
-
-            const tbody = document.getElementById('table-body');
+        // 테이블 렌더링
+        function renderTable() {
+            const tbody = document.getElementById('combination-tbody');
             tbody.innerHTML = '';
 
-            if (pageData.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="p-10 text-center text-slate-500">조건에 맞는 데이터가 없습니다.</td></tr>`;
-                return;
+            const totalPages = Math.ceil(filteredCombinations.length / itemsPerPage) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const pageItems = filteredCombinations.slice(startIndex, startIndex + itemsPerPage);
+
+            if (pageItems.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-500">조건에 맞는 데이터가 없습니다.</td></tr>`;
+            } else {
+                pageItems.forEach((item) => {
+                    const tr = document.createElement('tr');
+                    tr.className = item.is_checked 
+                        ? "bg-emerald-50/50 dark:bg-emerald-950/10 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition" 
+                        : "hover:bg-slate-50 dark:hover:bg-slate-800/30 transition";
+
+                    // 약초 뱃지 생성
+                    let herbBadgesHTML = item.parsedHerbs.map(hName => {
+                        const hObj = herbs.find(x => x.name === hName);
+                        const style = hObj ? groupStyles[hObj.group] : 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300';
+                        return `<span class="inline-block px-1.5 py-0.5 rounded text-[11px] font-medium border ${style}">${hName}</span>`;
+                    }).join('<span class="text-slate-400 dark:text-slate-600 text-xs mx-1">+</span>');
+
+                    const modifier = item.last_modified_by || "-";
+                    const resultText = item.result_text || "";
+                    
+                    // 일반 유저는 완료된 항목의 결과 수정 불가
+                    const disableInput = (!isAdmin && item.is_checked) ? "disabled" : "";
+
+                    tr.innerHTML = `
+                        <td class="py-3 px-4 text-center border-r border-slate-100 dark:border-slate-800/50">
+                            <input type="checkbox" id="check-${item.id}" ${item.is_checked ? 'checked' : ''} 
+                                onclick="saveRowData('${item.id}')"
+                                class="w-4 h-4 rounded text-emerald-500 bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-700 cursor-pointer accent-emerald-500">
+                        </td>
+                        <td class="py-3 px-4 text-center text-slate-500 dark:text-slate-400 font-medium">${item.count}개</td>
+                        <td class="py-3 px-4 font-normal flex flex-wrap items-center gap-y-1">${herbBadgesHTML}</td>
+                        <td class="py-3 px-4">
+                            <div class="flex gap-2">
+                                <input type="text" id="res-${item.id}" value="${resultText}" placeholder="결과를 입력하고 체크하세요" ${disableInput}
+                                    class="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded px-2 py-1.5 text-xs focus:outline-none focus:border-emerald-500 disabled:opacity-50 disabled:bg-slate-100 dark:disabled:bg-slate-900 transition-colors">
+                                ${isAdmin ? `<button onclick="saveRowData('${item.id}', true)" class="px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded transition-colors whitespace-nowrap">저장</button>` : ''}
+                            </div>
+                        </td>
+                        <td class="py-3 px-4 text-center font-medium text-[11px] text-slate-400 dark:text-slate-500">${modifier}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
             }
 
-            pageData.forEach((combo) => {
-                const isChecked = combo.is_checked;
-                const modifier = combo.last_modified_by || "-";
-                
-                // 예쁜 태그 형태로 조합 렌더링
-                const herbsHtml = combo.parsedHerbs.map(h => {
-                    const color = HERB_DATA[h] ? HERB_DATA[h].color : 'text-slate-300 border-slate-600 bg-slate-800';
-                    return `<span class="px-2 py-1 border rounded text-xs whitespace-nowrap ${color}">${h}</span>`;
-                }).join('<span class="text-slate-500 mx-2 text-xs">+</span>');
-                
-                const tr = document.createElement('tr');
-                tr.className = `hover:bg-[#1e293b] transition-colors ${isChecked ? 'bg-[#111827]' : ''}`;
-                tr.innerHTML = `
-                    <td class="p-4 text-center border-r border-[#1e293b]/50">
-                        <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleRowCheck('${combo.id}', this)">
-                    </td>
-                    <td class="p-4 text-center text-slate-400 font-mono text-sm">${combo.count}개</td>
-                    <td class="p-4 flex items-center flex-wrap gap-y-2">${herbsHtml}</td>
-                    <td class="p-4 text-center text-blue-400 font-bold font-mono">${combo.totalScore} 점</td>
-                    <td class="p-4 text-center text-xs text-slate-500 modifier-cell">${modifier}</td>
-                `;
-                tbody.appendChild(tr);
-            });
+            document.getElementById('page-input-top').value = currentPage;
+            document.getElementById('total-pages-top').innerText = totalPages;
+            document.getElementById('btn-prev').disabled = currentPage === 1;
+            document.getElementById('btn-next').disabled = currentPage === totalPages;
+            
             updateProgressBar();
         }
 
-        // 7. 페이지 이동 컨트롤
-        function changePage(direction) {
-            currentPage += direction;
-            renderTableWithPagination();
-            document.querySelector('main > div:last-child').scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function jumpToPage() {
-            const inputVal = parseInt(document.getElementById('page-input').value);
-            if (!isNaN(inputVal)) {
-                currentPage = inputVal;
-                renderTableWithPagination();
-                document.querySelector('main > div:last-child').scrollTo({ top: 0, behavior: 'smooth' });
-            } else {
-                document.getElementById('page-input').value = currentPage;
+        // 데이터 저장 및 동기화 로직
+        async function saveRowData(id, forceSave = false) {
+            const checkbox = document.getElementById(`check-${id}`);
+            const resultInput = document.getElementById(`res-${id}`);
+            
+            // 일반 유저가 결과를 안 적고 체크하려 할 때 방어
+            if (checkbox.checked && !isAdmin && resultInput.value.trim() === "") {
+                alert("결과를 먼저 입력하신 후 체크해 주세요!");
+                checkbox.checked = false;
+                resultInput.focus();
+                return;
             }
-        }
 
-        // 8. 체크박스 동기화
-        async function toggleRowCheck(id, checkbox) {
-            const isChecked = checkbox.checked;
             checkbox.disabled = true;
+            if(!isAdmin) resultInput.disabled = true;
+
             try {
                 const res = await fetch(`${API_BASE_URL}/check`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ combo_id: id, is_checked: isChecked, nickname: userNickname, admin_token: adminToken })
+                    body: JSON.stringify({ 
+                        combo_id: id, 
+                        is_checked: checkbox.checked, 
+                        nickname: userNickname, 
+                        admin_token: adminToken,
+                        result_text: resultInput.value.trim()
+                    })
                 });
                 const result = await res.json();
+                
                 if (result.success) {
                     const found = allCombinations.find(c => c.id === id);
                     if (found) {
-                        found.is_checked = isChecked;
+                        found.is_checked = checkbox.checked;
                         found.last_modified_by = result.last_modified_by;
+                        found.result_text = resultInput.value.trim();
                     }
+                    if(forceSave) alert("결과가 수정되었습니다.");
                     applyFiltersAndRender(false); // 페이지 유지
                 } else {
                     alert(result.message);
-                    checkbox.checked = !isChecked;
+                    checkbox.checked = !checkbox.checked;
                 }
             } catch (e) {
-                checkbox.checked = !isChecked;
+                alert("통신 오류가 발생했습니다.");
+                checkbox.checked = !checkbox.checked;
             } finally {
                 checkbox.disabled = false;
+                if(!isAdmin && !checkbox.checked) resultInput.disabled = false;
             }
         }
 
-        // 9. 진행률 업데이트
-        function updateProgressBar() {
-            const completed = allCombinations.filter(c => c.is_checked).length;
-            const pct = allCombinations.length ? ((completed / allCombinations.length) * 100).toFixed(1) : 0;
-            document.getElementById('progress-bar').style.width = `${pct}%`;
-            document.getElementById('progress-text').textContent = `${pct}%`;
-            document.getElementById('progress-detail').textContent = `${completed.toLocaleString()} / ${allCombinations.length.toLocaleString()} 완료`;
+        // 페이지 조작 로직
+        function changePage(direction) {
+            currentPage += direction;
+            renderTable();
         }
 
-        // 초기 실행
-        renderHerbFilters();
-        fetchCombinations();
+        function goToPage(val) {
+            let p = parseInt(val);
+            if (isNaN(p) || p < 1) p = 1;
+            currentPage = p;
+            renderTable();
+        }
+
+        function updateProgressBar() {
+            const total = allCombinations.length;
+            const completed = allCombinations.filter(c => c.is_checked).length;
+            const pct = total ? ((completed / total) * 100).toFixed(1) : 0;
+            
+            document.getElementById('progress-text').innerText = `${completed.toLocaleString()} / ${total.toLocaleString()} (${pct}%)`;
+            document.getElementById('progress-bar').style.width = `${pct}%`;
+        }
     </script>
 </body>
 </html>
