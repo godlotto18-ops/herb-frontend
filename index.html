@@ -78,7 +78,7 @@
         let userNickname = localStorage.getItem("user_nickname");
         if (!userNickname) {
             // 사용자에게 친근하게 닉네임 요청
-            userNickname = prompt("도감 기여에 사용할 닉네임을 설정해주세요 (예: 이지연):");
+            userNickname = prompt("도감 기여에 사용할 닉네임을 설정해주세요:");
             while (!userNickname || userNickname.trim() === "") {
                 userNickname = prompt("닉네임 없이는 이용할 수 없습니다. 사용할 닉네임을 꼭 입력해주세요:");
             }
