@@ -39,8 +39,8 @@
         </div>
 
         <div class="flex flex-col md:flex-row gap-4 mb-6">
-            <input type="text" id="search-input" placeholder="약초 이름 검색" class="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
-            <select id="filter-status" class="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+            <input type="text" id="search-input" placeholder="약초 이름 검색 (예: 산삼)" class="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <select id="filter-status" class="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white cursor-pointer">
                 <option value="all">모든 조합 보기</option>
                 <option value="checked">완료된 조합만</option>
                 <option value="unchecked">미완료 조합만</option>
@@ -100,7 +100,7 @@
             } else if (token !== null) alert("비밀번호가 일치하지 않습니다.");
         }
 
-        // 3. 서버 통신 및 렌더링
+        // 3. 서버 통신
         async function fetchCombinations() {
             try {
                 const response = await fetch(`${API_BASE_URL}/combinations`);
@@ -111,13 +111,36 @@
             }
         }
 
+        // 🌟 [핵심 수정] 객체(Object)에서 실제 약초 텍스트만 추출하는 헬퍼 함수
+        function extractHerbsText(herbsData) {
+            if (Array.isArray(herbsData)) {
+                return herbsData.map(h => {
+                    if (typeof h === 'object' && h !== null) {
+                        // 객체 안의 첫 번째 값을 무조건 꺼내옵니다.
+                        return Object.values(h)[0] || '';
+                    }
+                    return String(h);
+                }).join(', ');
+            }
+            return String(herbsData || '');
+        }
+
+        // 4. 테이블 렌더링
         function renderTable(data) {
             const tbody = document.getElementById('table-body');
             tbody.innerHTML = '';
+            
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-400">조건에 맞는 데이터가 없습니다.</td></tr>`;
+                return;
+            }
+
             data.forEach(combo => {
                 const isChecked = combo.is_checked;
                 const modifier = combo.last_modified_by || "-";
-                const herbsText = Array.isArray(combo.herbs) ? combo.herbs.join(', ') : String(combo.herbs || '');
+                
+                // [object Object] 대신 진짜 텍스트 추출 적용
+                const herbsText = extractHerbsText(combo.herbs);
                 
                 const tr = document.createElement('tr');
                 tr.className = isChecked ? 'bg-emerald-50' : '';
@@ -135,6 +158,7 @@
             updateProgressBar();
         }
 
+        // 5. 체크박스 이벤트
         async function toggleRowCheck(id, checkbox) {
             const isChecked = checkbox.checked;
             checkbox.disabled = true;
@@ -147,38 +171,45 @@
                 const result = await res.json();
                 if (result.success) {
                     const found = allCombinations.find(c => c.id === id);
-                    found.is_checked = isChecked;
-                    found.last_modified_by = result.last_modified_by;
-                    renderTable(allCombinations.filter(combo => combo.herbs.some(h => String(h).toLowerCase().includes(document.getElementById('search-input').value.toLowerCase()))));
+                    if (found) {
+                        found.is_checked = isChecked;
+                        found.last_modified_by = result.last_modified_by;
+                    }
+                    applyFiltersAndRender();
                 } else {
                     alert(result.message);
                     checkbox.checked = !isChecked;
                 }
             } catch (e) {
-                alert("통신 오류");
+                alert("통신 오류가 발생했습니다.");
                 checkbox.checked = !isChecked;
             } finally {
                 checkbox.disabled = false;
             }
         }
 
+        // 6. 필터 및 검색
         function applyFiltersAndRender() {
             const search = document.getElementById('search-input').value.toLowerCase();
             const status = document.getElementById('filter-status').value;
+            
             const filtered = allCombinations.filter(c => {
-                const matchSearch = String(c.herbs || '').toLowerCase().includes(search);
+                // 검색할 때도 추출된 텍스트를 기반으로 검색
+                const herbsString = extractHerbsText(c.herbs).toLowerCase();
+                const matchSearch = herbsString.includes(search);
                 const matchStatus = status === 'all' ? true : (status === 'checked' ? c.is_checked : !c.is_checked);
                 return matchSearch && matchStatus;
             });
             renderTable(filtered);
         }
 
+        // 7. 진행률 바 업데이트
         function updateProgressBar() {
             const completed = allCombinations.filter(c => c.is_checked).length;
             const pct = allCombinations.length ? ((completed / allCombinations.length) * 100).toFixed(1) : 0;
             document.getElementById('progress-bar').style.width = `${pct}%`;
             document.getElementById('progress-text').textContent = `${pct}%`;
-            document.getElementById('progress-detail').textContent = `${completed} / ${allCombinations.length} 완료`;
+            document.getElementById('progress-detail').textContent = `${completed.toLocaleString()} / ${allCombinations.length.toLocaleString()} 조합 완료`;
         }
 
         document.getElementById('search-input').addEventListener('input', applyFiltersAndRender);
