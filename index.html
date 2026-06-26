@@ -368,7 +368,7 @@
                 let html = '';
                 logs.forEach(l => {
                     const time = new Date(l.timestamp).toLocaleString();
-                    const herbsClean = l.herbs.replace(/[{}"']/g, '').split(':')[1] || l.herbs;
+                    const herbsClean = l.herbs ? l.herbs.replace(/[{}"']/g, '').split(':')[1] : '조합 정보 없음';
                     
                     const rollbackBtn = isAdmin 
                         ? `<button onclick="executeRollback(${l.log_id})" class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/30 dark:border-rose-900 rounded hover:bg-rose-100 transition whitespace-nowrap text-[10px]">이전 상태로 복구</button>`
