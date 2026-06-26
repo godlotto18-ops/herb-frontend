@@ -5,12 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>약초 조합 도감</title>
     
-    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio,line-clamp"></script>
-    
     <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
     
     <style>
-        /* 기본 폰트와 배경색 강제 적용 */
         body { font-family: 'Pretendard', sans-serif !important; background-color: #f8fafc !important; }
         .table-container { max-height: calc(100vh - 250px); overflow-y: auto; }
         thead th { position: sticky; top: 0; background-color: #f1f5f9; z-index: 10; border-bottom: 1px solid #e2e8f0; }
@@ -24,12 +22,9 @@
                 <h1 class="text-3xl font-bold text-slate-800">🌿 약초 조합 도감</h1>
                 <p class="text-slate-500 mt-1" id="user-greeting">접속 중...</p>
             </div>
-            
-            <div class="flex gap-2">
-                <button onclick="loginAsAdmin()" id="admin-btn" class="px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-sm font-medium transition-colors">
-                    🔒 관리자 로그인
-                </button>
-            </div>
+            <button onclick="loginAsAdmin()" id="admin-btn" class="px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-sm font-medium transition-colors">
+                🔒 관리자 로그인
+            </button>
         </div>
 
         <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200 mb-6">
@@ -44,8 +39,7 @@
         </div>
 
         <div class="flex flex-col md:flex-row gap-4 mb-6">
-            <input type="text" id="search-input" placeholder="약초 이름 검색 (예: 산삼)" 
-                   class="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <input type="text" id="search-input" placeholder="약초 이름 검색" class="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
             <select id="filter-status" class="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
                 <option value="all">모든 조합 보기</option>
                 <option value="checked">완료된 조합만</option>
@@ -56,7 +50,7 @@
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden table-container">
             <table class="w-full text-left border-collapse">
                 <thead>
-                    <tr class="text-slate-500 text-sm border-b border-slate-200">
+                    <tr class="text-slate-500 text-sm">
                         <th class="p-4 font-semibold w-24">ID</th>
                         <th class="p-4 font-semibold">필요 약초</th>
                         <th class="p-4 font-semibold w-24 text-center">개수</th>
@@ -65,9 +59,7 @@
                     </tr>
                 </thead>
                 <tbody id="table-body" class="text-slate-700 divide-y divide-slate-100">
-                    <tr>
-                        <td colspan="5" class="p-8 text-center text-slate-400">데이터를 불러오는 중입니다...</td>
-                    </tr>
+                    <tr><td colspan="5" class="p-8 text-center text-slate-400">데이터를 불러오는 중입니다...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -77,12 +69,12 @@
         const API_BASE_URL = "https://herb-tracker-api.onrender.com/api";
         let allCombinations = [];
 
-        // 1. 닉네임 및 관리자 시스템 초기화 (예시 문구 제거됨)
+        // 1. 닉네임 시스템
         let userNickname = localStorage.getItem("user_nickname");
         if (!userNickname) {
             userNickname = prompt("도감 기여에 사용할 닉네임을 설정해주세요:");
             while (!userNickname || userNickname.trim() === "") {
-                userNickname = prompt("닉네임 없이는 이용할 수 없습니다. 사용할 닉네임을 꼭 입력해주세요:");
+                userNickname = prompt("닉네임 없이는 이용할 수 없습니다.");
             }
             userNickname = userNickname.trim();
             localStorage.setItem("user_nickname", userNickname);
@@ -90,70 +82,52 @@
 
         let adminToken = localStorage.getItem("admin_token") || "";
         
+        // 2. 관리자 권한 및 UI 상태 표시
         const greetingEl = document.getElementById("user-greeting");
         const adminBtn = document.getElementById("admin-btn");
         if (adminToken === "hanwol123") {
-            greetingEl.innerHTML = `반갑습니다, <b>${userNickname}</b>님! <span class="text-emerald-500 text-sm font-medium ml-2">(👑 관리자 모드 활성화됨)</span>`;
+            greetingEl.innerHTML = `반갑습니다, <b>${userNickname}</b>님! <span class="text-emerald-500 text-sm font-medium ml-2">(👑 관리자 모드)</span>`;
             adminBtn.style.display = "none";
         } else {
             greetingEl.innerHTML = `반갑습니다, <b>${userNickname}</b>님! 함께 도감을 채워주세요.`;
         }
 
-        // 2. 관리자 로그인 함수
         function loginAsAdmin() {
             const token = prompt("관리자 비밀번호를 입력하세요:");
             if (token === "hanwol123") {
                 localStorage.setItem("admin_token", token);
-                alert("🔒 관리자 권한이 활성화되었습니다. 이제 모든 항목을 자유롭게 수정할 수 있습니다.");
                 location.reload();
-            } else if (token !== null) {
-                alert("비밀번호가 일치하지 않습니다.");
-            }
+            } else if (token !== null) alert("비밀번호가 일치하지 않습니다.");
         }
 
-        // 3. 서버에서 데이터 가져오기
+        // 3. 서버 통신 및 렌더링
         async function fetchCombinations() {
             try {
                 const response = await fetch(`${API_BASE_URL}/combinations`);
-                if (!response.ok) throw new Error("서버 응답 오류");
                 allCombinations = await response.json();
                 applyFiltersAndRender();
-            } catch (error) {
-                console.error("데이터 로드 실패:", error);
-                document.getElementById('table-body').innerHTML = `
-                    <tr><td colspan="5" class="p-8 text-center text-red-500">데이터를 불러오지 못했습니다. 서버 상태를 확인해주세요.</td></tr>
-                `;
+            } catch (e) {
+                document.getElementById('table-body').innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-500">데이터 로드 실패</td></tr>`;
             }
         }
 
-        // 4. 테이블 렌더링 (에러 방어 코드 적용 완료)
         function renderTable(data) {
             const tbody = document.getElementById('table-body');
             tbody.innerHTML = '';
-
-            if (data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-400">조건에 맞는 데이터가 없습니다.</td></tr>`;
-                return;
-            }
-
             data.forEach(combo => {
                 const isChecked = combo.is_checked;
-                const modifier = combo.last_modified_by ? combo.last_modified_by : "-";
-                
-                // 데이터 보호: 약초 목록이 문자가 아니어도 강제로 문자로 변환
+                const modifier = combo.last_modified_by || "-";
                 const herbsText = Array.isArray(combo.herbs) ? combo.herbs.join(', ') : String(combo.herbs || '');
                 
                 const tr = document.createElement('tr');
-                tr.className = `hover:bg-slate-50 transition-colors ${isChecked ? 'bg-emerald-50' : ''}`;
+                tr.className = isChecked ? 'bg-emerald-50' : '';
                 tr.innerHTML = `
                     <td class="p-4 font-mono text-sm text-slate-500">${combo.id}</td>
                     <td class="p-4 font-medium">${herbsText}</td>
                     <td class="p-4 text-center">${combo.count}</td>
                     <td class="p-4 text-center modifier-cell font-semibold ${modifier !== '-' ? 'text-emerald-700' : 'text-slate-300'}">${modifier}</td>
                     <td class="p-4 text-center">
-                        <input type="checkbox" class="w-5 h-5 accent-emerald-500 cursor-pointer" 
-                               ${isChecked ? 'checked' : ''} 
-                               onchange="toggleRowCheck('${combo.id}', this)">
+                        <input type="checkbox" class="w-5 h-5 accent-emerald-500 cursor-pointer" ${isChecked ? 'checked' : ''} onchange="toggleRowCheck('${combo.id}', this)">
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -161,101 +135,54 @@
             updateProgressBar();
         }
 
-        // 5. 체크박스 클릭 시 서버 동기화 로직 (권한 체크 포함)
         async function toggleRowCheck(id, checkbox) {
             const isChecked = checkbox.checked;
             checkbox.disabled = true;
-            
             try {
-                const response = await fetch(`${API_BASE_URL}/check`, {
+                const res = await fetch(`${API_BASE_URL}/check`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        combo_id: id, 
-                        is_checked: isChecked, 
-                        nickname: userNickname,
-                        admin_token: adminToken 
-                    })
+                    body: JSON.stringify({ combo_id: id, is_checked: isChecked, nickname: userNickname, admin_token: adminToken })
                 });
-                
-                const result = await response.json();
-                
+                const result = await res.json();
                 if (result.success) {
                     const found = allCombinations.find(c => c.id === id);
-                    if (found) {
-                        found.is_checked = isChecked;
-                        found.last_modified_by = result.last_modified_by;
-                    }
-
-                    const row = checkbox.closest('tr');
-                    const modifierCell = row.querySelector('.modifier-cell');
-                    if (modifierCell) {
-                        const newModifier = result.last_modified_by ? result.last_modified_by : "-";
-                        modifierCell.textContent = newModifier;
-                        modifierCell.className = `p-4 text-center modifier-cell font-semibold ${newModifier !== '-' ? 'text-emerald-700' : 'text-slate-300'}`;
-                    }
-                    
-                    if (isChecked) {
-                        row.classList.add('bg-emerald-50');
-                    } else {
-                        row.classList.remove('bg-emerald-50');
-                    }
-                    updateProgressBar();
+                    found.is_checked = isChecked;
+                    found.last_modified_by = result.last_modified_by;
+                    renderTable(allCombinations.filter(combo => combo.herbs.some(h => String(h).toLowerCase().includes(document.getElementById('search-input').value.toLowerCase()))));
                 } else {
                     alert(result.message);
                     checkbox.checked = !isChecked;
                 }
-            } catch (error) {
-                console.error("통신 오류:", error);
-                alert("서버와 통신하는 중 문제가 발생했습니다.");
+            } catch (e) {
+                alert("통신 오류");
                 checkbox.checked = !isChecked;
             } finally {
                 checkbox.disabled = false;
             }
         }
 
-        // 6. 검색 및 필터 적용 (에러 방어 코드 적용 완료)
         function applyFiltersAndRender() {
-            const searchTerm = document.getElementById('search-input').value.toLowerCase();
-            const filterStatus = document.getElementById('filter-status').value;
-
-            const filteredData = allCombinations.filter(combo => {
-                let matchSearch = false;
-                // 데이터 보호: 약초 검색 시 배열이든 아니든 모두 강제로 문자로 변환하여 검색
-                if (Array.isArray(combo.herbs)) {
-                    matchSearch = combo.herbs.some(herb => String(herb).toLowerCase().includes(searchTerm));
-                } else {
-                    matchSearch = String(combo.herbs || '').toLowerCase().includes(searchTerm);
-                }
-                
-                let matchStatus = true;
-                if (filterStatus === 'checked') matchStatus = combo.is_checked === true;
-                if (filterStatus === 'unchecked') matchStatus = combo.is_checked === false;
-
+            const search = document.getElementById('search-input').value.toLowerCase();
+            const status = document.getElementById('filter-status').value;
+            const filtered = allCombinations.filter(c => {
+                const matchSearch = String(c.herbs || '').toLowerCase().includes(search);
+                const matchStatus = status === 'all' ? true : (status === 'checked' ? c.is_checked : !c.is_checked);
                 return matchSearch && matchStatus;
             });
-
-            renderTable(filteredData);
+            renderTable(filtered);
         }
 
-        // 7. 진행률 업데이트
         function updateProgressBar() {
-            const total = allCombinations.length;
-            if (total === 0) return;
-            
             const completed = allCombinations.filter(c => c.is_checked).length;
-            const percentage = ((completed / total) * 100).toFixed(1);
-
-            document.getElementById('progress-bar').style.width = `${percentage}%`;
-            document.getElementById('progress-text').textContent = `${percentage}%`;
-            document.getElementById('progress-detail').textContent = `${completed.toLocaleString()} / ${total.toLocaleString()} 조합 완료`;
+            const pct = allCombinations.length ? ((completed / allCombinations.length) * 100).toFixed(1) : 0;
+            document.getElementById('progress-bar').style.width = `${pct}%`;
+            document.getElementById('progress-text').textContent = `${pct}%`;
+            document.getElementById('progress-detail').textContent = `${completed} / ${allCombinations.length} 완료`;
         }
 
-        // 이벤트 리스너 등록
         document.getElementById('search-input').addEventListener('input', applyFiltersAndRender);
         document.getElementById('filter-status').addEventListener('change', applyFiltersAndRender);
-
-        // 최초 실행
         fetchCombinations();
     </script>
 </body>
