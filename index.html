@@ -25,7 +25,6 @@
         <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
             <div>
                 <h1 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-500">🌿 약초 조합 도감</h1>
-                <!-- 닉네임 클릭하면 변경 가능 -->
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 cursor-pointer hover:text-emerald-500 transition-colors" id="user-greeting" onclick="changeNickname()" title="클릭하여 닉네임 변경">접속 중...</p>
             </div>
             
@@ -171,8 +170,6 @@
 
         let allCombinations = [], filtered = [], selected = new Set(), currentPage = 1;
         const itemsPerPage = 100;
-
-        // 저장 중인 항목 추적 (중복 요청 방지)
         let savingIds = new Set();
         
         let userNickname = localStorage.getItem("user_nickname");
@@ -191,7 +188,28 @@
             fetchData();
         };
 
-        // 닉네임 변경 함수
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function parseHerbs(herbsRaw) {
+            if (!herbsRaw) return '조합 정보 없음';
+            try {
+                const parsed = Array.isArray(herbsRaw)
+                    ? herbsRaw.map(h => typeof h === 'object' ? Object.values(h)[0] : h)
+                    : String(herbsRaw).split(',').map(h => h.trim());
+                return parsed.join(' + ');
+            } catch(e) {
+                return String(herbsRaw);
+            }
+        }
+
         function changeNickname() {
             const newNick = prompt("새 닉네임을 입력하세요:", userNickname);
             if (!newNick || newNick.trim() === "") return;
@@ -228,12 +246,7 @@
         async function fetchData() {
             const banner = document.getElementById('loading-banner');
             banner.classList.add('hidden');
-
-            // 3초 후에도 응답 없으면 슬립 배너 표시
-            const bannerTimer = setTimeout(() => {
-                banner.classList.remove('hidden');
-            }, 3000);
-
+            const bannerTimer = setTimeout(() => banner.classList.remove('hidden'), 3000);
             try {
                 const res = await fetch(`${API_BASE_URL}/combinations`);
                 clearTimeout(bannerTimer);
@@ -288,17 +301,6 @@
             render();
         }
 
-        // XSS 방지용 HTML 이스케이프 함수
-        function escapeHtml(str) {
-            if (!str) return '';
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
-        }
-
         function render() {
             document.getElementById('filtered-count').innerText = filtered.length.toLocaleString();
             
@@ -345,7 +347,6 @@
         }
 
         async function save(id, force = false) {
-            // 중복 요청 방지
             if (savingIds.has(id)) return;
             savingIds.add(id);
 
@@ -362,7 +363,6 @@
 
             checkbox.disabled = true;
 
-            // String 비교로 타입 불일치 방지
             const combo = allCombinations.find(c => String(c.id) === String(id));
             const version = combo ? combo.version : 0;
 
@@ -407,7 +407,6 @@
             const total = allCombinations.length;
             const completed = allCombinations.filter(c => c.is_checked).length;
             const pct = total ? ((completed / total) * 100).toFixed(2) : 0;
-            
             document.getElementById('progress-text').innerText = `${completed.toLocaleString()} / ${total.toLocaleString()} (${pct}%)`;
             document.getElementById('progress-bar').style.width = `${pct}%`;
         }
@@ -433,32 +432,36 @@
                         year: 'numeric', month: '2-digit', day: '2-digit', 
                         hour: '2-digit', minute: '2-digit', second: '2-digit' 
                     });
-                    let herbsClean = '조합 정보 없음';
-if (l.herbs) {
-    try {
-        const parsed = Array.isArray(l.herbs)
-            ? l.herbs.map(h => typeof h === 'object' ? Object.values(h)[0] : h)
-            : String(l.herbs).split(',').map(h => h.trim());
-        herbsClean = parsed.join(' + ');
-    } catch(e) {
-        herbsClean = String(l.herbs);
-    }
-}
-                    
-                    // 롤백 버튼: combo_id와 현재 version도 함께 전달
+
+                    // 조합 약초 목록
+                    const herbsText = parseHerbs(l.herbs);
+
+                    // 변경 전 결과 기록
+                    const prevText = l.prev_result_text ? escapeHtml(l.prev_result_text) : '<span class="text-slate-400 italic">없음</span>';
+                    // 변경 후 현재 결과 기록 (현재 DB 값)
+                    const currText = l.current_result_text ? escapeHtml(l.current_result_text) : '<span class="text-slate-400 italic">없음</span>';
+
+                    // 체크 상태 변화 표시
+                    const prevChecked = l.prev_is_checked ? '✅ 완료' : '⬜ 미완료';
+                    const actionLabel = l.action === '체크' ? '✅ 완료로 변경' : '⬜ 미완료로 변경';
+
                     const combo = allCombinations.find(c => String(c.id) === String(l.combo_id));
                     const currentVersion = combo ? combo.version : 0;
 
-                    const rollbackBtn = isAdmin 
-                        ? `<button onclick="executeRollback(${l.log_id}, '${escapeHtml(String(l.combo_id))}', ${currentVersion})" class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/30 dark:border-rose-900 rounded hover:bg-rose-100 transition whitespace-nowrap text-[10px]">이전 상태로 복구</button>`
-                        : ``;
+                    const rollbackBtn = isAdmin
+                        ? `<button onclick="executeRollback(${l.log_id}, '${escapeHtml(String(l.combo_id))}', ${currentVersion})" class="px-2 py-1 bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/30 dark:border-rose-900 rounded hover:bg-rose-100 transition whitespace-nowrap text-[10px] shrink-0">이전 상태로 복구</button>`
+                        : '';
 
                     html += `
-                    <div class="bg-slate-100 dark:bg-slate-800/50 p-3 rounded-lg border border-slate-200 dark:border-slate-700 flex justify-between items-center gap-4">
-                        <div>
+                    <div class="bg-slate-100 dark:bg-slate-800/50 p-3 rounded-lg border border-slate-200 dark:border-slate-700 flex justify-between items-start gap-4">
+                        <div class="min-w-0 flex-1">
                             <div class="text-[10px] text-slate-500 mb-1">${time}</div>
-                            <div><b class="text-emerald-600 dark:text-emerald-400">${escapeHtml(l.nickname)}</b>님이 <b>[${escapeHtml(l.action)}]</b> 함</div>
-                            <div class="text-slate-500 truncate max-w-[200px] sm:max-w-xs mt-0.5">${escapeHtml(herbsClean)}</div>
+                            <div class="font-semibold mb-1"><b class="text-emerald-600 dark:text-emerald-400">${escapeHtml(l.nickname)}</b>님이 <b>${actionLabel}</b></div>
+                            <div class="text-slate-600 dark:text-slate-300 font-medium mb-1.5">🌿 ${escapeHtml(herbsText)}</div>
+                            <div class="text-[10px] space-y-0.5 text-slate-500">
+                                <div>변경 전 상태: <span class="font-medium">${prevChecked}</span> / 결과 기록: ${prevText}</div>
+                                <div>변경 후 상태: <span class="font-medium">${l.action === '체크' ? '✅ 완료' : '⬜ 미완료'}</span> / 결과 기록: ${currText}</div>
+                            </div>
                         </div>
                         ${rollbackBtn}
                     </div>`;
@@ -474,7 +477,7 @@ if (l.herbs) {
         }
 
         async function executeRollback(logId, comboId, version) {
-            if (!confirm("이 작업이 실행되기 직전의 상태로 해당 조합을 되돌리시겠습니까?")) return;
+            if (!confirm("이 작업이 실행되기 직전의 상태로 되돌립니다.\n이 시점 이후의 로그도 함께 삭제됩니다.\n계속하시겠습니까?")) return;
             
             try {
                 const res = await fetch(`${API_BASE_URL}/rollback`, {
