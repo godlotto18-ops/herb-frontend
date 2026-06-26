@@ -302,57 +302,62 @@
             });
         }
 
-        // 🌟 에러 핸들링이 강화된 save 함수
         async function save(id, force = false) {
-    const checkbox = document.getElementById('check-'+id);
-    const isChecked = checkbox.checked;
-    const text = document.getElementById('res-'+id).value;
-    
-    if (isChecked && !isAdmin && text.trim() === "") {
-        alert("결과를 먼저 입력해주세요!");
-        checkbox.checked = false;
-        return;
-    }
+            const checkbox = document.getElementById('check-'+id);
+            const isChecked = checkbox.checked;
+            const text = document.getElementById('res-'+id).value;
 
-    checkbox.disabled = true;
+            if (isChecked && !isAdmin && text.trim() === "") {
+                alert("결과를 먼저 입력해주세요!");
+                checkbox.checked = false;
+                return;
+            }
 
-    // 🌟 현재 버전 가져오기
-    const combo = allCombinations.find(c => c.id == id);
-    const version = combo ? combo.version : 0;
+            checkbox.disabled = true;
 
-    try {
-        const res = await fetch(`${API_BASE_URL}/check`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ 
-                combo_id: id, 
-                is_checked: isChecked, 
-                nickname: userNickname, 
-                result_text: text, 
-                admin_token: localStorage.admin_token || "",
-                version: version  // 🌟 version 추가
-            })
-        });
-        
-        const data = await res.json();
-        
-        // 🌟 에러 메시지 파싱 수정 (detail이 객체/문자열 둘 다 처리)
-        if (res.ok && data.success) {
-            if(force) alert("강제 저장되었습니다.");
-            fetchData();
-        } else {
-            const detail = data.detail;
-            const msg = typeof detail === 'string' ? detail : JSON.stringify(detail);
-            alert("저장에 실패했습니다: " + (msg || "서버 오류"));
-            checkbox.checked = !isChecked;
-            checkbox.disabled = false;
+            // 🌟 String 비교로 타입 불일치 방지
+            const combo = allCombinations.find(c => String(c.id) === String(id));
+            const version = combo ? combo.version : 0;
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/check`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        combo_id: id,
+                        is_checked: isChecked,
+                        nickname: userNickname,
+                        result_text: text,
+                        admin_token: localStorage.getItem("admin_token") || "",
+                        version: version
+                    })
+                });
+
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    if (force) alert("강제 저장되었습니다.");
+                    fetchData();
+                } else {
+                    // 🌟 detail이 문자열/배열/객체 어떤 형태든 안전하게 처리
+                    let msg = "서버 오류";
+                    if (typeof data.detail === 'string') {
+                        msg = data.detail;
+                    } else if (Array.isArray(data.detail)) {
+                        msg = data.detail.map(e => e.msg || JSON.stringify(e)).join(', ');
+                    } else if (data.detail) {
+                        msg = JSON.stringify(data.detail);
+                    }
+                    alert("저장에 실패했습니다: " + msg);
+                    checkbox.checked = !isChecked;
+                    checkbox.disabled = false;
+                }
+            } catch(e) {
+                alert("서버와 통신할 수 없습니다.");
+                checkbox.checked = !isChecked;
+                checkbox.disabled = false;
+            }
         }
-    } catch(e) {
-        alert("서버와 통신할 수 없습니다.");
-        checkbox.checked = !isChecked;
-        checkbox.disabled = false;
-    }
-}
 
         function updateProgressBar() {
             const total = allCombinations.length;
@@ -383,7 +388,7 @@
                         timeZone: "Asia/Seoul",
                         year: 'numeric', month: '2-digit', day: '2-digit', 
                         hour: '2-digit', minute: '2-digit', second: '2-digit' 
-                });
+                    });
                     const herbsClean = l.herbs ? l.herbs.replace(/[{}"']/g, '').split(':')[1] : '조합 정보 없음';
                     
                     const rollbackBtn = isAdmin 
@@ -417,7 +422,7 @@
                 const res = await fetch(`${API_BASE_URL}/rollback`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ log_id: logId, admin_token: localStorage.admin_token })
+                    body: JSON.stringify({ log_id: logId, admin_token: localStorage.getItem("admin_token") })
                 });
                 
                 const result = await res.json();
@@ -426,7 +431,10 @@
                     closeLogsModal();
                     fetchData();
                 } else {
-                    alert(result.detail || "복구 실패");
+                    let msg = "복구 실패";
+                    if (typeof result.detail === 'string') msg = result.detail;
+                    else if (result.detail) msg = JSON.stringify(result.detail);
+                    alert(msg);
                 }
             } catch (e) {
                 alert("통신 오류가 발생했습니다.");
